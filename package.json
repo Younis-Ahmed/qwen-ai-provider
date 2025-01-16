@@ -20,6 +20,10 @@
     "node": "^18.0.0 || ^20.0.0"
   },
   "homepage": "https://github.com/Younis-Ahmed/qwen-ai-provider",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Younis-Ahmed/qwen-ai-provider.git"
+  },
   
 
 }
