@@ -24,6 +24,9 @@
     "type": "git",
     "url": "git+https://github.com/Younis-Ahmed/qwen-ai-provider.git"
   },
-  
+  "bugs": {
+    "url": "https://github.com/Younis-Ahmed/qwen-ai-provider/issues"
+  },
+
 
 }
