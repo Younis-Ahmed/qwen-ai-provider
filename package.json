@@ -2,7 +2,7 @@
   "name": "qwen-ai-provider",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -14,8 +14,8 @@
     "vercel",
     "ai-sdk"
   ],
-  "license": "Apache-2.0",
   "author": "Younis Ahmed <07430e0e-29c0-4a43-bcd0-c123714a124a@anonaddy.com>",
+  "license": "Apache-2.0",
   "engines": {
     "node": "^18.0.0 || ^20.0.0"
   },
