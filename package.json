@@ -1,15 +1,17 @@
 {
   "name": "qwen-ai-provider",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.2.0",
   "description": "Vercel AI Provider for running Qwen AI models",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist/**/*"
-  ],
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "author": "Younis Ahmed <07430e0e-29c0-4a43-bcd0-c123714a124a@anonaddy.com>",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/Younis-Ahmed/qwen-ai-provider",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Younis-Ahmed/qwen-ai-provider.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Younis-Ahmed/qwen-ai-provider/issues"
   },
   "keywords": [
     "qwen",
@@ -19,23 +21,22 @@
     "vercel",
     "ai-sdk"
   ],
-  "author": "Younis Ahmed <07430e0e-29c0-4a43-bcd0-c123714a124a@anonaddy.com>",
-  "license": "Apache-2.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
   "engines": {
     "node": "^18.0.0 || ^20.0.0"
   },
-  "homepage": "https://github.com/Younis-Ahmed/qwen-ai-provider",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Younis-Ahmed/qwen-ai-provider.git"
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "bugs": {
-    "url": "https://github.com/Younis-Ahmed/qwen-ai-provider/issues"
-  },
-  "packageManager": "pnpm@10.2.0",
   "devDependencies": {
     "@antfu/eslint-config": "^4.1.1",
     "eslint": "^9.19.0",
-    "eslint-plugin-format": "^1.0.1"
+    "eslint-plugin-format": "^1.0.1",
+    "husky": "^9.1.7"
   }
 }
