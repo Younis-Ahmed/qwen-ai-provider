@@ -28,13 +28,16 @@
     "dist/**/*"
   ],
   "engines": {
-    "node": "^18.0.0 || ^20.0.0"
+    "node": ">=18.0.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.1.1",
+    "@commitlint/cli": "^19.7.1",
+    "@commitlint/config-conventional": "^19.7.1",
     "eslint": "^9.19.0",
     "eslint-plugin-format": "^1.0.1",
     "husky": "^9.1.7"
