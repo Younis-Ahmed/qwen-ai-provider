@@ -22,3 +22,6 @@ yarn-error.log*
 
 # Editor directories
 .vscode/
+
+# Discard workflow
+.github/workflows/bb*
