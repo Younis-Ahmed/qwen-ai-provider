@@ -64,19 +64,22 @@ jobs:
     needs: package
     runs-on: ubuntu-latest
     environment:
-      name: production
+      name: production   # This sets up a manual approval gate for production
     steps:
-      - name: Upload
+      - name: Download Package Artifact
         uses: actions/download-artifact@v4
         with:
           name: package
-      - uses: actions/setup-node@v4
+      - name: Setup Node for Publishing
+        uses: actions/setup-node@v4
         with:
           node-version: 18.x
           registry-url: https://npm.pkg.github.com/
           scope: '@younis-ahmed'
-      - run: echo "registry=https://npm.pkg.github.com/Younis-ahmed" >> .npmrc
-      - run: pnpm publish $(ls *.tgz)
+      - name: Configure npm Registry
+        run: echo "registry=https://npm.pkg.github.com/Younis-ahmed" >> .npmrc
+      - name: Publish Package
+        run: pnpm publish $(ls *.tgz)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PAT }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
