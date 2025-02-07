@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: / # Location of package.json and package-lock.json
+    target-branch: main # Branch to update
+    schedule:
+      interval: weekly
+      day: monday
+      time: '04:00'
+      timezone: UTC
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: deps
+      include: scope
+    rebase-strategy: auto
+    versioning-strategy: auto
+    labels:
+      - dependencies
+      - automated
+    reviewers: [Younis-Ahmed]
