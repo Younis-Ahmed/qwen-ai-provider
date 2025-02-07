@@ -7,92 +7,88 @@ on:
     branches: [main]
 
 jobs:
-    prettier:
-      name: 'Prettier'
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
-  
-        - name: Setup pnpm
-          uses: pnpm/action-setup@v4.0.0
-  
-        - name: Use Node.js 22
-          uses: actions/setup-node@v4
-          with:
-            node-version: '22'
-            cache: 'pnpm'
-  
-        - name: Install dependencies
-          run: pnpm install --frozen-lockfile --prefer-offline
-  
-        - name: Run Prettier check
-          run: pnpm run prettier-check
-  
-    eslint:
-      name: 'ESLint'
-      runs-on: ubuntu-latest
-      steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4.0.0
-
-      - name: Use Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
-
-      - name: Run ESLint check
-        run: pnpm run lint
-
-    types:
-      name: 'TypeScript'
-      runs-on: ubuntu-latest
-      steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4.0.0
-
-      - name: Use Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
-
-      - name: Run TypeScript type check
-        run: pnpm run type-check
-
-    test:
-      name: 'Test'
-      runs-on: ubuntu-latest
-      strategy:
-        matrix:
-          node-version: [18, 20, 21, 22]
-      steps:
+  prettier:
+    name: Prettier Check
+    runs-on: ubuntu-latest
+    steps:
       - name: Common Setup
         uses: ./.github/actions/common-setup
         with:
           pnpm-version: 10.2.0
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - name: Use Node.js 22 with caching
+        uses: ./.github/actions/common-node-setup
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
-      - name: Run tests
+      - name: Run Prettier Check
+        run: pnpm run prettier-check
+
+  eslint:
+    name: ESLint Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Common Setup
+        uses: ./.github/actions/common-setup
+        with:
+          pnpm-version: 10.2.0
+
+      - name: Use Node.js 22
+        uses: ./.github/actions/common-node-setup
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Run ESLint Check
+        run: pnpm run lint
+
+  types:
+    name: TypeScript Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Common Setup
+        uses: ./.github/actions/common-setup
+        with:
+          pnpm-version: 10.2.0
+
+      - name: Use Node.js 22
+        uses: ./.github/actions/common-node-setup
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Run TypeScript Check
+        run: pnpm run type-check
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20, 21, 22]
+    steps:
+      - name: Common Setup
+        uses: ./.github/actions/common-setup
+        with:
+          pnpm-version: 10.2.0
+
+      - name: Setup Node.js with Common Node Setup
+        uses: ./.github/actions/common-node-setup
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Run Tests
         run: pnpm test --if-present
