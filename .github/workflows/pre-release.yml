@@ -1,0 +1,83 @@
+name: Pre-release CI
+
+on:
+  workflow_run:
+    workflows: ["Quality Checks"]
+    types:
+      - completed
+
+jobs:
+  build:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 19, 20, 21, 22]
+    steps:
+      - name: Common Setup
+        uses: ./.github/actions/common-setup
+        with:
+          pnpm-version: 10.2.0
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      - name: Build
+        run: |
+          pnpm install --frozen-lockfile --prefer-offline
+          pnpm run build
+        env:
+          CI: true
+
+  package:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Common Setup
+        uses: ./.github/actions/common-setup
+        with:
+          pnpm-version: 10.2.0
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - run: pnpm run build
+      - run: pnpm version prerelease --preid=preRel-$GITHUB_RUN_ID --no-git-tag-version
+      - run: pnpm pack
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: "*.tgz"
+
+  publish:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} && github.repository_owner == 'Younis-ahmed' && github.ref == 'refs/heads/main'
+    name: "Publish to GitHub Packages"
+    needs: package
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Upload
+        uses: actions/download-artifact@v4
+        with:
+          name: package
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          registry-url: https://npm.pkg.github.com/
+          scope: '@younis-ahmed'
+      - run: echo "registry=https://npm.pkg.github.com/Younis-ahmed" >> .npmrc
+      - run: pnpm publish $(ls *.tgz)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PAT }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
