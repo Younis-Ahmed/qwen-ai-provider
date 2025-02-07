@@ -1,0 +1,15 @@
+name: Common Setup
+description: Checkout repository and setup pnpm
+inputs:
+  pnpm-version:
+    description: The version of pnpm to use
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: ${{ inputs.pnpm-version }}
