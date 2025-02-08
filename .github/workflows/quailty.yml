@@ -11,14 +11,11 @@ jobs:
     name: Prettier Check
     runs-on: ubuntu-latest
     steps:
-      - name: Common Setup
+      - uses: actions/checkout@v4
+      - name: Common Setup Node and pnpm
         uses: ./.github/actions/common-setup
         with:
           pnpm-version: 10.2.0
-
-      - name: Use Node.js 22 with caching
-        uses: ./.github/actions/common-node-setup
-        with:
           node-version: '22'
           cache: 'pnpm'
 
@@ -32,14 +29,10 @@ jobs:
     name: ESLint Check
     runs-on: ubuntu-latest
     steps:
-      - name: Common Setup
+      - name: Common Setup Node and pnpm
         uses: ./.github/actions/common-setup
         with:
           pnpm-version: 10.2.0
-
-      - name: Use Node.js 22
-        uses: ./.github/actions/common-node-setup
-        with:
           node-version: '22'
           cache: 'pnpm'
 
@@ -53,14 +46,10 @@ jobs:
     name: TypeScript Check
     runs-on: ubuntu-latest
     steps:
-      - name: Common Setup
+      - name: Common Setup Node and pnpm
         uses: ./.github/actions/common-setup
         with:
           pnpm-version: 10.2.0
-
-      - name: Use Node.js 22
-        uses: ./.github/actions/common-node-setup
-        with:
           node-version: '22'
           cache: 'pnpm'
 
@@ -81,11 +70,8 @@ jobs:
         uses: ./.github/actions/common-setup
         with:
           pnpm-version: 10.2.0
-
-      - name: Setup Node.js with Common Node Setup
-        uses: ./.github/actions/common-node-setup
-        with:
           node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
