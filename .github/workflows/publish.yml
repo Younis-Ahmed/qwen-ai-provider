@@ -16,11 +16,10 @@ jobs:
     Publish:
         runs-on: ubuntu-latest
         steps:
+            - uses: actions/checkout@v4
             - uses: ./.github/actions/common-setup
               with:
                   pnpm-version: 10.2.0
-            - uses: ./.github/actions/common-node-setup
-              with:
                   node-version: 22
             - run: pnpm install --frozen-lockfile --prefer-offline
             - name: Create PR/Publish
@@ -29,5 +28,5 @@ jobs:
               with:
                 publish: pnpm run ci:release
               env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
                 NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
