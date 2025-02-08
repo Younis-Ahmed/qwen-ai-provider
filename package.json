@@ -27,19 +27,36 @@
   "files": [
     "dist/**/*"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
+    "build": "tsup",
+    "dev": "tsup -d --watch",
+    "lint": "eslint \"./**/*.ts*\"",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "husky"
+    "type-check": "tsc --noEmit",
+    "prettier-check": "prettier --check \"./**/*.ts*\"",
+    "clean": "rm -rf dist",
+    "prepare": "husky",
+    "ci:release": "pnpm clean && pnpm build && changeset publish",
+    "ci:version": "changeset version && pnpm install --no-frozen-lockfile"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.1.1",
+    "@changesets/cli": "^2.27.12",
     "@commitlint/cli": "^19.7.1",
     "@commitlint/config-conventional": "^19.7.1",
+    "@types/node": "^22.13.1",
     "eslint": "^9.19.0",
     "eslint-plugin-format": "^1.0.1",
-    "husky": "^9.1.7"
+    "husky": "^9.1.7",
+    "prettier": "^3.4.2",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
   }
 }
