@@ -34,7 +34,7 @@ export interface QwenProviderSettings {
 
   /**
   API key that is being send using the `Authorization` header.
-  It defaults to the `DASHCOPE_API_KEY` environment variable.
+  It defaults to the `DASHSCOPE_API_KEY` environment variable.
    */
   apiKey?: string
 
@@ -53,7 +53,7 @@ export interface QwenProviderSettings {
 }
 
 export function createQwen(
-  options?: QwenProviderSettings = {},
+  options: QwenProviderSettings = {},
 ): QwenProvider {
   const baseURL
         = withoutTrailingSlash(options.baseURL) ?? 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1'
@@ -74,6 +74,18 @@ export function createQwen(
     provider: 'qwen.chat',
     baseURL,
     headers: getHeaders,
-
+    fetch: options.fetch,
   })
+
+  const provider = function (modelId: QwenChatModelId, settings?: QwenChatSettings) {
+    return createChatModel(modelId, settings)
+  }
+
+  provider.chat = createChatModel
+
+  provider.languageModel = createChatModel
+
+  return provider as QwenProvider
 }
+
+export const qwen = createQwen()
