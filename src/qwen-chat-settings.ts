@@ -1,3 +1,4 @@
+// https://www.alibabacloud.com/help/en/model-studio/getting-started/models
 export type QwenChatModelId =
 // Text Geeration
   | 'qwen2.5-14b-instruct-1m'
@@ -6,6 +7,7 @@ export type QwenChatModelId =
   | 'qwen2.5-14b-instruct'
   | 'qwen2.5-7b-instruct'
   | 'qwen2-57b-a14b-instruct'
+  | 'qwen2.5-7b-instruct-1m'
   | 'qwen-max'
   | 'qwen-max-latest'
   | 'qwen-max-2025-01-25'
@@ -22,6 +24,10 @@ export type QwenChatModelId =
   | 'qwen2.5-vl-72b-instruct'
   | 'qwen2.5-vl-7b-instruct'
   | 'qwen2.5-vl-3b-instruct'
-  | 'qwen2.5-7b-instruct-1m'
 // Embedding
   | 'text-embedding-v3'
+  | (string & {})
+
+export interface QwenChatSettings {
+
+}
