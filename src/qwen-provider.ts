@@ -1,23 +1,45 @@
-import type { LanguageModelV1, ProviderV1 } from '@ai-sdk/provider'
+import type { EmbeddingModelV1, LanguageModelV1, ProviderV1 } from '@ai-sdk/provider'
 import type {
   FetchFunction,
 } from '@ai-sdk/provider-utils'
 import type { QwenChatModelId, QwenChatSettings } from './qwen-chat-settings'
+import type { QwenEmbeddingModelId, QwenEmbeddingSettings } from './qwen-embedding-settings'
 import {
-  generateId,
+  OpenAICompatibleChatLanguageModel,
+  OpenAICompatibleCompletionLanguageModel,
+  OpenAICompatibleEmbeddingModel,
+} from '@ai-sdk/openai-compatible'
+import {
   loadApiKey,
   withoutTrailingSlash,
 } from '@ai-sdk/provider-utils'
-import { QwenChatLanguageModel } from './qwen-chat-language-model'
+// import { QwenChatLanguageModel } from './qwen-chat-language-model'
 
 // model factory function with additional methods and properties
 export interface QwenProvider extends ProviderV1 {
   (modelId: QwenChatModelId, settings?: QwenChatSettings): LanguageModelV1
 
-  chat: (
+  /**
+   * Create a new chat model for text generation.
+   * @param modelId The model ID.
+   * @param settings The settings for the model.
+   * @returns The chat model.
+   */
+  chatModel: (
     modelId: QwenChatModelId,
     settings?: QwenChatSettings,
   ) => LanguageModelV1
+
+  /**
+  Creates a text embedding model for text generation.
+  @param modelId The model ID.
+  @param settings The settings for the model.
+  @returns The text embedding model.
+   */
+  textEmbeddingModel: <T>(
+    modelId: QwenEmbeddingModelId, // TODO: define this type
+    settings?: QwenEmbeddingSettings, // TODO: define this type
+  ) => EmbeddingModelV1<T>
 
   languageModel: (
     modelId: QwenChatModelId,
@@ -44,19 +66,24 @@ export interface QwenProviderSettings {
   headers?: Record<string, string>
 
   /**
+  Optional custom url query parameters to include in request urls.
+   */
+  queryParams?: Record<string, string>
+  /**
+  /**
   Custom fetch implementation. You can use it as a middleware to intercept requests,
   or to provide a custom fetch implementation for e.g. testing.
    */
   fetch?: FetchFunction
 
-  generateId?: () => string
+  // generateId?: () => string
 }
 
 export function createQwen(
   options: QwenProviderSettings = {},
 ): QwenProvider {
   const baseURL
-        = withoutTrailingSlash(options.baseURL) ?? 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1'
+        = withoutTrailingSlash(options.baseURL ?? 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1')
 
   const getHeaders = () => ({
     Authorization: `Bearer ${loadApiKey({
@@ -67,23 +94,61 @@ export function createQwen(
     ...options.headers,
   })
 
-  const createChatModel = (
-    modelId: QwenChatModelId,
-    settings?: QwenChatSettings,
-  ) => new QwenChatLanguageModel(modelId, settings, {
-    provider: 'qwen.chat',
-    baseURL,
+  interface CommonModelConfig {
+    provider: string
+    url: ({ path }: { path: string }) => string
+    headers: () => Record<string, string>
+    fetch?: FetchFunction
+  }
+
+  const getCommonModelConfig = (modelType: string): CommonModelConfig => ({
+    provider: `example.${modelType}`,
+    url: ({ path }) => {
+      const url = new URL(`${baseURL}${path}`)
+      if (options.queryParams) {
+        url.search = new URLSearchParams(options.queryParams).toString()
+      }
+      return url.toString()
+    },
     headers: getHeaders,
     fetch: options.fetch,
   })
+
+  const createChatModel = (
+    modelId: QwenChatModelId,
+    settings: QwenChatSettings = {},
+  ) => new OpenAICompatibleChatLanguageModel(modelId, settings, {
+    ...getCommonModelConfig('chat'),
+    defaultObjectGenerationMode: 'tool',
+  })
+
+  const createCompletionModel = (
+    modelId: QwenCompletionModelId, // TODO: define this type
+    settings: QwenCompletionSettings = {}, // TODO: define this type
+  ) =>
+    new OpenAICompatibleCompletionLanguageModel(
+      modelId,
+      settings,
+      getCommonModelConfig('completion'),
+    )
+
+  const createTextEmbeddingModel = (
+    modelId: QwenEmbeddingModelId,
+    settings: QwenEmbeddingSettings = {},
+  ) =>
+    new OpenAICompatibleEmbeddingModel(
+      modelId,
+      settings,
+      getCommonModelConfig('embedding'),
+    )
 
   const provider = function (modelId: QwenChatModelId, settings?: QwenChatSettings) {
     return createChatModel(modelId, settings)
   }
 
   provider.chat = createChatModel
-
-  provider.languageModel = createChatModel
+  provider.completion = createCompletionModel
+  provider.textEmbedding = createTextEmbeddingModel
 
   return provider as QwenProvider
 }
