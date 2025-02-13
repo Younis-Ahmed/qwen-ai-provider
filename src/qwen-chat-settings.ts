@@ -24,10 +24,8 @@ export type QwenChatModelId =
   | 'qwen2.5-vl-72b-instruct'
   | 'qwen2.5-vl-7b-instruct'
   | 'qwen2.5-vl-3b-instruct'
-// Embedding
-  | 'text-embedding-v3'
   | (string & {})
 
 export interface QwenChatSettings {
-
+  // TODO: Get the settings from the API documentation https://www.alibabacloud.com/help/en/model-studio/developer-reference/use-qwen-by-calling-api
 }
