@@ -3,6 +3,7 @@ import type {
   FetchFunction,
 } from '@ai-sdk/provider-utils'
 import type { QwenChatModelId, QwenChatSettings } from './qwen-chat-settings'
+import type { QwenCompletionModelId, QwenCompletionSettings } from './qwen-completion-settings'
 import type { QwenEmbeddingModelId, QwenEmbeddingSettings } from './qwen-embedding-settings'
 import {
   OpenAICompatibleChatLanguageModel,
@@ -36,14 +37,19 @@ export interface QwenProvider extends ProviderV1 {
   @param settings The settings for the model.
   @returns The text embedding model.
    */
-  textEmbeddingModel: <T>(
+  textEmbeddingModel: (
     modelId: QwenEmbeddingModelId, // TODO: define this type
     settings?: QwenEmbeddingSettings, // TODO: define this type
-  ) => EmbeddingModelV1<T>
+  ) => EmbeddingModelV1<string>
 
   languageModel: (
     modelId: QwenChatModelId,
     settings?: QwenChatSettings,
+  ) => LanguageModelV1
+
+  completion: (
+    modelId: QwenCompletionModelId,
+    settings?: QwenCompletionSettings,
   ) => LanguageModelV1
 }
 
@@ -123,8 +129,8 @@ export function createQwen(
   })
 
   const createCompletionModel = (
-    modelId: QwenCompletionModelId, // TODO: define this type
-    settings: QwenCompletionSettings = {}, // TODO: define this type
+    modelId: QwenCompletionModelId,
+    settings: QwenCompletionSettings = {},
   ) =>
     new OpenAICompatibleCompletionLanguageModel(
       modelId,
@@ -142,14 +148,12 @@ export function createQwen(
       getCommonModelConfig('embedding'),
     )
 
-  const provider = function (modelId: QwenChatModelId, settings?: QwenChatSettings) {
-    return createChatModel(modelId, settings)
-  }
+  const provider = (modelId: QwenChatModelId, settings?: QwenChatSettings) => createChatModel(modelId, settings)
 
-  provider.chat = createChatModel
+  provider.chatModel = createChatModel
   provider.completion = createCompletionModel
-  provider.textEmbedding = createTextEmbeddingModel
-
+  provider.textEmbeddingModel = createTextEmbeddingModel
+  provider.languageModel = createChatModel
   return provider as QwenProvider
 }
 
