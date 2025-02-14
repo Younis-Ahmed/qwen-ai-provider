@@ -19,9 +19,3 @@ yarn-error.log*
 
 # OS generated files
 .DS_Store
-
-# Editor directories
-.vscode/
-
-# Discard workflow
-.github/workflows/bb*
