@@ -38,8 +38,8 @@ export interface QwenProvider extends ProviderV1 {
   @returns The text embedding model.
    */
   textEmbeddingModel: (
-    modelId: QwenEmbeddingModelId, // TODO: define this type
-    settings?: QwenEmbeddingSettings, // TODO: define this type
+    modelId: QwenEmbeddingModelId,
+    settings?: QwenEmbeddingSettings,
   ) => EmbeddingModelV1<string>
 
   languageModel: (
