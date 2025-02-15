@@ -14,9 +14,7 @@ import {
   loadApiKey,
   withoutTrailingSlash,
 } from '@ai-sdk/provider-utils'
-// import { QwenChatLanguageModel } from './qwen-chat-language-model'
 
-// model factory function with additional methods and properties
 export interface QwenProvider extends ProviderV1 {
   (modelId: QwenChatModelId, settings?: QwenChatSettings): LanguageModelV1
 
