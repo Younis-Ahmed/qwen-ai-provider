@@ -1,3 +1,5 @@
+import type { OpenAICompatibleChatSettings } from '@ai-sdk/openai-compatible'
+
 // https://www.alibabacloud.com/help/en/model-studio/getting-started/models
 export type QwenChatModelId =
 // Text Geeration
@@ -26,6 +28,4 @@ export type QwenChatModelId =
   | 'qwen2.5-vl-3b-instruct'
   | (string & {})
 
-export interface QwenChatSettings {
-  // TODO: Get the settings from the API documentation https://www.alibabacloud.com/help/en/model-studio/developer-reference/use-qwen-by-calling-api
-}
+export interface QwenChatSettings extends OpenAICompatibleChatSettings {}
