@@ -69,15 +69,14 @@ jobs:
         with:
           node-version: 18.x
           registry-url: https://npm.pkg.github.com/
-          scope: "@younis-ahmed"
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.2.0
       - name: Configure npm Registry
-        run: echo "@younis-ahmed:registry=https://npm.pkg.github.com" >> .npmrc
+        run: echo "registry=https://npm.pkg.github.com/Younis-ahmed" >> .npmrc
       - name: Publish Package
-        run: pnpm publish $(ls *.tgz)
+        run: pnpm publish $(ls *.tgz) 
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
