@@ -106,7 +106,7 @@ export function createQwen(
   }
 
   const getCommonModelConfig = (modelType: string): CommonModelConfig => ({
-    provider: `example.${modelType}`,
+    provider: `qwen.${modelType}`,
     url: ({ path }) => {
       const url = new URL(`${baseURL}${path}`)
       if (options.queryParams) {
