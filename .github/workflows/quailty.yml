@@ -68,4 +68,4 @@ jobs:
         run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Run Tests
-        run: pnpm test --if-present
+        run: pnpm test
