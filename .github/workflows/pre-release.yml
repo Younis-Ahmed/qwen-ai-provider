@@ -2,7 +2,7 @@ name: Pre-release CI
 
 on:
   workflow_run:
-    workflows: ["Quality Checks"]
+    workflows: [Quality Checks]
     types:
       - completed
 
@@ -20,9 +20,9 @@ jobs:
         with:
           pnpm-version: 10.2.0
           node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
+          cache: pnpm
 
-      - name: Build 
+      - name: Build
         run: |
           pnpm install --frozen-lockfile --prefer-offline
           pnpm run build
@@ -40,7 +40,7 @@ jobs:
         with:
           pnpm-version: 10.2.0
           node-version: 22.x
-          cache: 'pnpm'
+          cache: pnpm
 
       - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm run build
@@ -54,11 +54,11 @@ jobs:
 
   publish:
     if: ${{ github.event.workflow_run.conclusion == 'success' }} && github.repository_owner == 'Younis-ahmed' && github.ref == 'refs/heads/main'
-    name: "Publish to GitHub Packages"
+    name: Publish to GitHub Packages
     needs: package
     runs-on: ubuntu-latest
     environment:
-      name: production   # This sets up a manual approval gate for production
+      name: production # This sets up a manual approval gate for production
     steps:
       - name: Download Package Artifact
         uses: actions/download-artifact@v4
@@ -69,7 +69,7 @@ jobs:
         with:
           node-version: 18.x
           registry-url: https://npm.pkg.github.com/
-          scope: '@younis-ahmed'
+          scope: "@younis-ahmed"
       - name: Configure npm Registry
         run: echo "registry=https://npm.pkg.github.com/Younis-ahmed" >> .npmrc
       - name: Publish Package

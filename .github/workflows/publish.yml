@@ -1,32 +1,32 @@
 name: Publish Release
 on:
-    workflow_dispatch:
-      inputs:
-        version:
-          description: 'Publish to npm registry'
-          required: true
-          type: boolean
-          default: false
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Publish to npm registry
+        required: true
+        type: boolean
+        default: false
 
 permissions:
-    contents: write
-    packages: write
-    pull-requests: write
+  contents: write
+  packages: write
+  pull-requests: write
 jobs:
-    Publish:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-            - uses: ./.github/actions/common-setup
-              with:
-                  pnpm-version: 10.2.0
-                  node-version: 22
-            - run: pnpm install --frozen-lockfile --prefer-offline
-            - name: Create PR/Publish
-              id: changesets
-              uses: changesets/action@v1.4.9
-              with:
-                publish: pnpm run ci:release
-              env:
-                GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-                NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+  Publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/common-setup
+        with:
+          pnpm-version: 10.2.0
+          node-version: 22
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Create PR/Publish
+        id: changesets
+        uses: changesets/action@v1.4.9
+        with:
+          publish: pnpm run ci:release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
