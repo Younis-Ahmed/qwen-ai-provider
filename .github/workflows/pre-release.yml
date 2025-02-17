@@ -75,7 +75,7 @@ jobs:
         with:
           version: 10.2.0
       - name: Configure npm Registry
-        run: echo "registry=https://npm.pkg.github.com/Younis-ahmed" >> .npmrc
+        run: echo "@younis-ahmed:registry=https://npm.pkg.github.com" >> .npmrc
       - name: Publish Package
         run: pnpm publish $(ls *.tgz)
         env:
