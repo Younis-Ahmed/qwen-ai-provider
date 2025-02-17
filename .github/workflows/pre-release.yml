@@ -10,6 +10,7 @@ jobs:
   build:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         node-version: [18, 19, 20, 21, 22]
@@ -32,6 +33,11 @@ jobs:
   package:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
     needs: build
     steps:
       - uses: actions/checkout@v4
@@ -74,7 +80,7 @@ jobs:
         with:
           version: 10.2.0
       - name: Configure npm Registry
-        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_TOKEN }}" > ~/.npmrc
       - name: Publish Package
         run: pnpm publish $(ls *.tgz) 
         env:
