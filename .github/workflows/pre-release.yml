@@ -44,7 +44,7 @@ jobs:
           cache: pnpm
 
       - name: Change package name to scoped package
-        run: pnpm pkg set name @younis-ahmed/qwen-ai-provider && pnpm pkg set publishConfig.registry=https://npm.pkg.github.com/
+        run: pnpm pkg set name=@younis-ahmed/qwen-ai-provider && pnpm pkg set publishConfig.registry=https://npm.pkg.github.com/
 
       - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm run build
