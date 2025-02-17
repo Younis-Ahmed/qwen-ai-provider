@@ -29,8 +29,8 @@ describe("qwenProvider", () => {
 
   describe("createQwen", () => {
     it("should set API key using loadApiKey with default options", () => {
-      // eslint-disable-next-line unused-imports/no-unused-vars
-      const model = provider("test-model", {})
+      // Create a model with a provider
+      provider("test-model", {})
       // Get the constructor call for the Chat Language Model
       const constructorCall = vi.mocked(OpenAICompatibleChatLanguageModel).mock.calls[0]
       const config = constructorCall[2]
