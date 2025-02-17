@@ -29,9 +29,15 @@ describe("qwenProvider", () => {
 
   describe("createQwen", () => {
     it("should set API key using loadApiKey with default options", () => {
-      provider("test-model", {})
-      const call = vi.mocked(loadApiKey).mock.calls[0][0]
-      expect(call).toEqual({
+      // eslint-disable-next-line unused-imports/no-unused-vars
+      const model = provider("test-model", {})
+      // Get the constructor call for the Chat Language Model
+      const constructorCall = vi.mocked(OpenAICompatibleChatLanguageModel).mock.calls[0]
+      const config = constructorCall[2]
+      // Invoke headers if needed by the configuration
+      config.headers && config.headers()
+
+      expect(loadApiKey).toHaveBeenCalledWith({
         apiKey: undefined,
         environmentVariableName: "DASHSCOPE_API_KEY",
         description: "Qwen API key",
