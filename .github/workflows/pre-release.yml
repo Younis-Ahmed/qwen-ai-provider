@@ -70,6 +70,10 @@ jobs:
           node-version: 18.x
           registry-url: https://npm.pkg.github.com/
           scope: "@younis-ahmed"
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.2.0
       - name: Configure npm Registry
         run: echo "registry=https://npm.pkg.github.com/Younis-ahmed" >> .npmrc
       - name: Publish Package
