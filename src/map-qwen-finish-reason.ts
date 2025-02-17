@@ -1,16 +1,16 @@
-import type { LanguageModelV1FinishReason } from "@ai-sdk/provider";
+import type { LanguageModelV1FinishReason } from "@ai-sdk/provider"
 
 export function mapQwenFinishReason(
   finishReason: string | null | undefined,
 ): LanguageModelV1FinishReason {
   switch (finishReason) {
     case "stop":
-      return "stop";
+      return "stop"
     case "length":
-      return "length";
+      return "length"
     case "tool_calls":
-      return "tool-calls";
+      return "tool-calls"
     default:
-      return "unknown";
+      return "unknown"
   }
 }

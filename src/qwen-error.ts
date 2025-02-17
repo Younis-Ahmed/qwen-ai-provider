@@ -1,5 +1,5 @@
-import { createJsonErrorResponseHandler } from "@ai-sdk/provider-utils";
-import { z } from "zod";
+import { createJsonErrorResponseHandler } from "@ai-sdk/provider-utils"
+import { z } from "zod"
 
 const qwenErrorDataSchema = z.object({
   object: z.literal("error"),
@@ -7,11 +7,11 @@ const qwenErrorDataSchema = z.object({
   type: z.string(),
   param: z.string().nullable(),
   code: z.string().nullable(),
-});
+})
 
-export type QwenErrorData = z.infer<typeof qwenErrorDataSchema>;
+export type QwenErrorData = z.infer<typeof qwenErrorDataSchema>
 
 export const qwenFailedResponseHandler = createJsonErrorResponseHandler({
   errorSchema: qwenErrorDataSchema,
-  errorToMessage: (error) => error.message,
-});
+  errorToMessage: error => error.message,
+})

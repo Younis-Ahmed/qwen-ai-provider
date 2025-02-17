@@ -1,4 +1,4 @@
-import type { OpenAICompatibleChatSettings } from "@ai-sdk/openai-compatible";
+import type { OpenAICompatibleChatSettings } from "@ai-sdk/openai-compatible"
 
 // https://www.alibabacloud.com/help/en/model-studio/getting-started/models
 export type QwenChatModelId =
@@ -26,6 +26,6 @@ export type QwenChatModelId =
   | "qwen2.5-vl-72b-instruct"
   | "qwen2.5-vl-7b-instruct"
   | "qwen2.5-vl-3b-instruct"
-  | (string & {});
+  | (string & {})
 
 export interface QwenChatSettings extends OpenAICompatibleChatSettings {}
