@@ -1,10 +1,13 @@
-import type { OpenAICompatibleEmbeddingSettings } from "@ai-sdk/openai-compatible"
-
 export type QwenEmbeddingModelId = "text-embedding-v3" | (string & {})
 
-export interface QwenEmbeddingSettings
-  extends OpenAICompatibleEmbeddingSettings {
+export interface QwenEmbeddingSettings {
   // settings from https://www.alibabacloud.com/help/en/model-studio/getting-started/models
+
+  /**
+A unique identifier representing your end-user, which can help vercel-sdk to
+monitor and detect abuse. Learn more.
+   */
+  user?: string
   /**
    * The type of the text. Valid values: query and document. Default value: document.
    * If you want to perform queries on vectorized texts, we recommend that you specify this parameter to distinguish between the query and document types. If you only want to perform clustering and classification on them, you can use the default value.
@@ -16,7 +19,7 @@ export interface QwenEmbeddingSettings
   Default value: 1024.
    */
 
-  dimension?: number
+  dimensions?: number
 
   /**
    * The type of output. Valid values: dense, sparse, dense&sparse.
