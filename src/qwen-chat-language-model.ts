@@ -108,7 +108,7 @@ const QwenChatResponseSchema = z.object({
 /**
  * A language model implementation for Qwen Chat API that follows the LanguageModelV1 interface.
  * Handles both regular text generation and structured outputs through various modes.
- * 
+ *
  * @param options.mode - The generation mode configuration that determines how the model generates responses:
  *                      'regular' for standard chat completion,
  *                      'object-json' for JSON-structured outputs,
@@ -186,9 +186,28 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
   }
 
   /**
-   * Prepares arguments for API calls based on provided options.
-   * @param options - Options for generating output.
-   * @returns An object containing the API arguments and any warnings.
+   * Generates the arguments and warnings required for a language model generation call.
+   *
+   * This function prepares the argument object based on the provided generation options and mode,
+   * including any necessary warnings for unsupported settings. It handles different generation modes
+   * such as regular, object-json, and object-tool.
+   *
+   * @param options.mode - The generation mode configuration containing the type and additional settings.
+   * @param options.prompt - The prompt input used to generate chat messages.
+   * @param options.maxTokens - The maximum number of tokens to generate.
+   * @param options.temperature - The temperature setting to control randomness in generation.
+   * @param options.topP - The nucleus sampling parameter (top-p) for token selection.
+   * @param options.topK - The top-k sampling parameter; if provided, it triggers a warning as it is unsupported.
+   * @param options.frequencyPenalty - The penalty applied to frequently occurring tokens.
+   * @param options.presencePenalty - The penalty applied based on the presence of tokens.
+   * @param options.providerMetadata - Additional metadata customized for the specific provider.
+   * @param options.stopSequences - An array of sequences that will signal the generation to stop.
+   * @param options.responseFormat - The desired response format; supports JSON schema formatting when structured outputs are enabled.
+   * @param options.seed - An optional seed value for randomization.
+   *
+   * @returns An object containing:
+   * - args: The arguments constructed for the language model generation request.
+   * - warnings: A list of warnings related to unsupported or deprecated settings.
    */
   private getArgs({
     mode,
