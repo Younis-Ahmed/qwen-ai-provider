@@ -18,6 +18,10 @@ import { QwenChatLanguageModel } from "./qwen-chat-language-model"
 import { QwenCompletionLanguageModel } from "./qwen-completion-language-model"
 import { QwenEmbeddingModel } from "./qwen-embedding-model"
 
+/**
+ * QwenProvider function type and its properties.
+ * Creates various language or embedding models based on the provided settings.
+ */
 export interface QwenProvider extends ProviderV1 {
   (modelId: QwenChatModelId, settings?: QwenChatSettings): LanguageModelV1
 
@@ -54,6 +58,9 @@ export interface QwenProvider extends ProviderV1 {
   ) => LanguageModelV1
 }
 
+/**
+ * QwenProviderSettings interface holds configuration options for Qwen.
+ */
 export interface QwenProviderSettings {
   /**
   Use a different URL prefix for API calls, e.g. to use proxy servers.
@@ -86,11 +93,18 @@ export interface QwenProviderSettings {
   // generateId?: () => string
 }
 
+/**
+ * Creates a Qwen provider instance with the specified options.
+ * @param options Provider configuration options.
+ * @returns A QwenProvider instance.
+ */
 export function createQwen(options: QwenProviderSettings = {}): QwenProvider {
+  // Remove trailing slash from the base URL.
   const baseURL = withoutTrailingSlash(
     options.baseURL ?? "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
   )
 
+  // Build headers including the API key.
   const getHeaders = () => ({
     Authorization: `Bearer ${loadApiKey({
       apiKey: options.apiKey,
@@ -107,11 +121,16 @@ export function createQwen(options: QwenProviderSettings = {}): QwenProvider {
     fetch?: FetchFunction
   }
 
+  /**
+   * Helper to get common model configuration.
+   * @param modelType The type of model (chat, completion, embedding).
+   */
   const getCommonModelConfig = (modelType: string): CommonModelConfig => ({
     provider: `qwen.${modelType}`,
     url: ({ path }) => {
       const url = new URL(`${baseURL}${path}`)
       if (options.queryParams) {
+        // Append custom query parameters if provided.
         url.search = new URLSearchParams(options.queryParams).toString()
       }
       return url.toString()
@@ -120,6 +139,7 @@ export function createQwen(options: QwenProviderSettings = {}): QwenProvider {
     fetch: options.fetch,
   })
 
+  // Create a chat language model instance.
   const createChatModel = (
     modelId: QwenChatModelId,
     settings: QwenChatSettings = {},
@@ -129,6 +149,7 @@ export function createQwen(options: QwenProviderSettings = {}): QwenProvider {
       defaultObjectGenerationMode: "tool",
     })
 
+  // Create a completion model instance.
   const createCompletionModel = (
     modelId: QwenCompletionModelId,
     settings: QwenCompletionSettings = {},
@@ -139,6 +160,7 @@ export function createQwen(options: QwenProviderSettings = {}): QwenProvider {
       getCommonModelConfig("completion"),
     )
 
+  // Create a text embedding model instance.
   const createTextEmbeddingModel = (
     modelId: QwenEmbeddingModelId,
     settings: QwenEmbeddingSettings = {},
@@ -149,6 +171,7 @@ export function createQwen(options: QwenProviderSettings = {}): QwenProvider {
       getCommonModelConfig("embedding"),
     )
 
+  // Default provider returns a chat model.
   const provider = (modelId: QwenChatModelId, settings?: QwenChatSettings) =>
     createChatModel(modelId, settings)
 
