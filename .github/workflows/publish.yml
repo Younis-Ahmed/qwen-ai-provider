@@ -16,17 +16,28 @@ jobs:
   Publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/common-setup
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          pnpm-version: 10.2.0
-          node-version: 22
-      - run: pnpm install --frozen-lockfile --prefer-offline
-      - name: Create PR/Publish
+          node-version: 18
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.2.0
+          
+      - name: Install Dependencies  
+        run: pnpm install --frozen-lockfile
+        
+      - name: Create Release Pull Request or Publish
         id: changesets
-        uses: changesets/action@v1.4.9
+        uses: changesets/action@v1
         with:
-          publish: pnpm run ci:release
+          publish: pnpm ci:release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
