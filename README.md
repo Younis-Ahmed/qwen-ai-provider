@@ -74,10 +74,6 @@ Other model functions include:
 - `qwen.textEmbeddingModel(modelId, settings)`
 - `qwen.languageModel(modelId, settings)` (alias for `chatModel`)
 
-## Examples
-
-Inside the `examples` folder, you will find projects demonstrating usage of the provider. Each project includes its own README with details.
-
 ## Tested Models and Capabilities
 
 This provider has been tested with Qwen models and supports a range of features:
