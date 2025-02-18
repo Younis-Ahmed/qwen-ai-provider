@@ -62,6 +62,12 @@ const QwenCompletionResponseSchema = z.object({
     .nullish(),
 })
 
+/**
+ * A language model implementation for Qwen completions.
+ *
+ * @remarks
+ * Implements the LanguageModelV1 interface and handles regular, streaming completions.
+ */
 export class QwenCompletionLanguageModel
 implements LanguageModelV1 {
   readonly specificationVersion = "v1"
@@ -74,6 +80,13 @@ implements LanguageModelV1 {
   private readonly failedResponseHandler: ResponseHandler<APICallError>
   private readonly chunkSchema // type inferred via constructor
 
+  /**
+   * Creates an instance of QwenCompletionLanguageModel.
+   *
+   * @param modelId - The model identifier.
+   * @param settings - The settings specific for Qwen completions.
+   * @param config - The configuration object which includes provider options and error handling.
+   */
   constructor(
     modelId: QwenCompletionModelId,
     settings: QwenCompletionSettings,
@@ -83,7 +96,7 @@ implements LanguageModelV1 {
     this.settings = settings
     this.config = config
 
-    // initialize error handling:
+    // Initialize error handling schema and response handler.
     const errorStructure
         = config.errorStructure ?? defaultQwenErrorStructure
     this.chunkSchema = createQwenCompletionChunkSchema(
@@ -100,6 +113,12 @@ implements LanguageModelV1 {
     return this.config.provider.split(".")[0].trim()
   }
 
+  /**
+   * Constructs the arguments for API calls based on provided options.
+   * 
+   * @param options - Options containing generation mode, prompt, and other parameters.
+   * @returns An object with args for the API call and any generated warnings.
+   */
   private getArgs({
     mode,
       inputFormat,
@@ -119,6 +138,7 @@ implements LanguageModelV1 {
 
     const warnings: LanguageModelV1CallWarning[] = []
 
+    // Warn if unsupported settings are used.
     if (topK != null) {
       warnings.push({
         type: "unsupported-setting",
@@ -134,22 +154,20 @@ implements LanguageModelV1 {
       })
     }
 
+    // Convert prompt to Qwen-specific prompt info.
     const { prompt: completionPrompt, stopSequences }
         = convertToQwenCompletionPrompt({ prompt, inputFormat })
 
     const stop = [...(stopSequences ?? []), ...(userStopSequences ?? [])]
 
     const baseArgs = {
-      // model id:
+      // Model id and settings:
       model: this.modelId,
-
-      // model specific settings:
       echo: this.settings.echo,
       logit_bias: this.settings.logitBias,
       suffix: this.settings.suffix,
       user: this.settings.user,
-
-      // standardized settings:
+      // Standardized settings:
       max_tokens: maxTokens,
       temperature,
       top_p: topP,
@@ -157,16 +175,14 @@ implements LanguageModelV1 {
       presence_penalty: presencePenalty,
       seed,
       ...providerMetadata?.[this.providerOptionsName],
-
-      // prompt:
+      // Prompt and stop sequences:
       prompt: completionPrompt,
-
-      // stop sequences:
       stop: stop.length > 0 ? stop : undefined,
     }
 
     switch (type) {
       case "regular": {
+        // Tools are not supported in "regular" mode.
         if (mode.tools?.length) {
           throw new UnsupportedFunctionalityError({
             functionality: "tools",
@@ -201,6 +217,12 @@ implements LanguageModelV1 {
     }
   }
 
+  /**
+   * Generates a completion response.
+   *
+   * @param options - Generation options including prompt and parameters.
+   * @returns A promise resolving the generated text, usage, finish status, and metadata.
+   */
   async doGenerate(
     options: Parameters<LanguageModelV1["doGenerate"]>[0],
   ): Promise<Awaited<ReturnType<LanguageModelV1["doGenerate"]>>> {
@@ -221,6 +243,7 @@ implements LanguageModelV1 {
       fetch: this.config.fetch,
     })
 
+    // Extract raw prompt and settings for debugging.
     const { prompt: rawPrompt, ...rawSettings } = args
     const choice = response.choices[0]
 
@@ -239,6 +262,12 @@ implements LanguageModelV1 {
     }
   }
 
+  /**
+   * Streams a completion response.
+   *
+   * @param options - Generation options including prompt and parameters.
+   * @returns A promise resolving a stream of response parts and metadata.
+   */
   async doStream(
     options: Parameters<LanguageModelV1["doStream"]>[0],
   ): Promise<Awaited<ReturnType<LanguageModelV1["doStream"]>>> {
@@ -280,7 +309,7 @@ implements LanguageModelV1 {
           LanguageModelV1StreamPart
         >({
           transform(chunk, controller) {
-            // handle failed chunk parsing / validation:
+            // Validate the current chunk and handle potential errors.
             if (!chunk.success) {
               finishReason = "error"
               controller.enqueue({ type: "error", error: chunk.error })
@@ -289,7 +318,7 @@ implements LanguageModelV1 {
 
             const value = chunk.value
 
-            // handle error chunks:
+            // If the API returns an error inside the chunk.
             if ("error" in value) {
               finishReason = "error"
               controller.enqueue({ type: "error", error: value.error })
@@ -299,6 +328,7 @@ implements LanguageModelV1 {
             if (isFirstChunk) {
               isFirstChunk = false
 
+              // Send response metadata on first successful chunk.
               controller.enqueue({
                 type: "response-metadata",
                 ...getResponseMetadata(value),
@@ -321,6 +351,7 @@ implements LanguageModelV1 {
             }
 
             if (choice?.text != null) {
+              // Enqueue text delta for streaming.
               controller.enqueue({
                 type: "text-delta",
                 textDelta: choice.text,
@@ -329,6 +360,7 @@ implements LanguageModelV1 {
           },
 
           flush(controller) {
+            // Signal the end of the stream, passing finish reason and usage data.
             controller.enqueue({
               type: "finish",
               finishReason,
@@ -347,6 +379,12 @@ implements LanguageModelV1 {
 
 // limited version of the schema, focussed on what is needed for the implementation
 // this approach limits breakages when the API changes and increases efficiency
+/**
+ * Creates a Zod schema to validate Qwen completion stream chunks.
+ *
+ * @param errorSchema - Schema to validate error objects.
+ * @returns A union schema for a valid chunk or an error.
+ */
 function createQwenCompletionChunkSchema<
   ERROR_SCHEMA extends z.ZodType,
 >(errorSchema: ERROR_SCHEMA) {
