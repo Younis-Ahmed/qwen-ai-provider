@@ -14,6 +14,8 @@ const TEST_PROMPT: LanguageModelV1Prompt = [
   { role: "user", content: [{ type: "text", text: "Hello" }] },
 ]
 
+vi.stubEnv("DASHSCOPE_API_KEY", "test-api-key-123")
+
 const provider = createQwen({
   baseURL: "https://my.api.com/v1/",
   headers: {

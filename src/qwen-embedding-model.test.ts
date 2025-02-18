@@ -7,6 +7,9 @@ const dummyEmbeddings = [
   [0.1, 0.2, 0.3, 0.4, 0.5],
   [0.6, 0.7, 0.8, 0.9, 1.0],
 ]
+
+vi.stubEnv("DASHSCOPE_API_KEY", "test-api-key-123")
+
 const testValues = ["sunny day at the beach", "rainy day in the city"]
 
 const provider = createQwen({

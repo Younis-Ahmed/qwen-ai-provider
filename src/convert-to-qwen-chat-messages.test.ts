@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { convertToQwenChatMessages } from "./convert-to-qwen-chat-messages"
 
+vi.stubEnv("DASHSCOPE_API_KEY", "test-api-key-123")
+
 describe("user messages", () => {
   it("should convert messages with only a text part to a string content", async () => {
     const result = convertToQwenChatMessages([
