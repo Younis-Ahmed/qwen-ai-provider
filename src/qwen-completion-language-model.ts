@@ -114,10 +114,35 @@ implements LanguageModelV1 {
   }
 
   /**
-   * Constructs the arguments for API calls based on provided options.
-   * 
-   * @param options - Options containing generation mode, prompt, and other parameters.
-   * @returns An object with args for the API call and any generated warnings.
+   * Generates the arguments for invoking the LanguageModelV1 doGenerate method.
+   *
+   * This function processes the given options to build a configuration object for the request. It converts the
+   * input prompt to a Qwen-specific format, merges stop sequences from both the user and the prompt conversion,
+   * and applies standardized settings for model generation. Additionally, it emits warnings for any unsupported
+   * settings (e.g., topK and non-text response formats) and throws errors if unsupported functionalities
+   * (such as tools, toolChoice, or specific modes) are detected.
+   *
+   * @param options - The configuration options for generating completion arguments.
+   * @param options.mode - The mode for generation, specifying the type and any additional functionalities.
+   * @param options.inputFormat - The format of the input prompt.
+   * @param options.prompt - The prompt text to be processed and used for generating a completion.
+   * @param options.maxTokens - The maximum number of tokens to generate.
+   * @param options.temperature - The sampling temperature for generation randomness.
+   * @param options.topP - The nucleus sampling probability threshold.
+   * @param options.topK - The Top-K sampling parameter (unsupported; will trigger a warning if provided).
+   * @param options.frequencyPenalty - The frequency penalty to reduce token repetition.
+   * @param options.presencePenalty - The presence penalty to encourage novel token generation.
+   * @param options.stopSequences - Additional stop sequences provided by the user.
+   * @param options.responseFormat - The desired response format (non-text formats will trigger a warning).
+   * @param options.seed - The seed for random number generation, ensuring deterministic outputs.
+   * @param options.providerMetadata - Additional metadata to be merged into the provider-specific settings.
+   *
+   * @returns An object containing:
+   *  - args: The built arguments object ready to be passed to the generation method.
+   *  - warnings: A list of warnings for unsupported settings that were detected.
+   *
+   * @throws UnsupportedFunctionalityError If unsupported functionalities (tools, toolChoice, object-json mode,
+   *         or object-tool mode) are specified in the mode configuration.
    */
   private getArgs({
     mode,
