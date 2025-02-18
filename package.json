@@ -1,6 +1,6 @@
 {
   "name": "qwen-ai-provider",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "packageManager": "pnpm@10.2.0",
   "description": "Vercel AI Provider for running Qwen AI models",
   "author": "Younis Ahmed <07430e0e-29c0-4a43-bcd0-c123714a124a@anonaddy.com>",
@@ -28,7 +28,8 @@
     "dist/**/*"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "engines": {
     "node": ">=18.0.0"
