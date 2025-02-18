@@ -81,10 +81,22 @@ implements EmbeddingModelV1<string> {
   }
 
   /**
-   * Executes a text embedding call for a list of input values.
-   * Validates the number of inputs and makes an HTTP call to the embedding endpoint.
-   * @param param0 An object containing input values, optional headers, and an abort signal.
-   * @returns An object containing embeddings, usage info, and raw response headers.
+   * Sends a request to the Qwen API to generate embeddings for the provided text inputs.
+   *
+   * This function validates that the number of embedding values does not exceed the allowed limit,
+   * constructs a JSON payload with the required parameters, and sends it to the API endpoint.
+   * It processes the response to extract embeddings, usage statistics, and raw response headers.
+   *
+   * @param param0 - The parameters object.
+   * @param param0.values - An array of strings to be embedded.
+   * @param param0.headers - Optional HTTP headers for the API request.
+   * @param param0.abortSignal - Optional signal to abort the API request.
+   * @returns A promise that resolves with an object containing:
+   *   - embeddings: An array of embedding arrays.
+   *   - usage: Optional usage information, including token counts.
+   *   - rawResponse: The response headers from the API call.
+   *
+   * @throws TooManyEmbeddingValuesForCallError if the number of input values exceeds the maximum allowed.
    */
   async doEmbed({
     values,
