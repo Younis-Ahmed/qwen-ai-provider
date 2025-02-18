@@ -40,6 +40,10 @@ import {
 } from "./qwen-error"
 import { prepareTools } from "./qwen-prepare-tools"
 
+/**
+ * Configuration for the Qwen Chat Language Model.
+ * @interface QwenChatConfig
+ */
 export interface QwenChatConfig {
   provider: string
   headers: () => Record<string, string | undefined>
@@ -97,6 +101,30 @@ const QwenChatResponseSchema = z.object({
     .nullish(),
 })
 
+/**
+ * Class representing the Qwen Chat language model.
+ * Implements LanguageModelV1 providing text generation and streaming.
+ */
+/**
+ * A language model implementation for Qwen Chat API that follows the LanguageModelV1 interface.
+ * Handles both regular text generation and structured outputs through various modes.
+ * 
+ * @param options.mode - The generation mode configuration that determines how the model generates responses:
+ *                      'regular' for standard chat completion,
+ *                      'object-json' for JSON-structured outputs,
+ *                      'object-tool' for function-calling outputs
+ * @param options.prompt - The input prompt messages to send to the model
+ * @param options.maxTokens - Maximum number of tokens to generate in the response
+ * @param options.temperature - Controls randomness in the model's output (0-2)
+ * @param options.topP - Nucleus sampling parameter that controls diversity (0-1)
+ * @param options.topK - Not supported by Qwen - will generate a warning if used
+ * @param options.frequencyPenalty - Penalizes frequent tokens (-2 to 2)
+ * @param options.presencePenalty - Penalizes repeated tokens (-2 to 2)
+ * @param options.providerMetadata - Additional provider-specific metadata to include in the request
+ * @param options.stopSequences - Array of sequences where the model should stop generating
+ * @param options.responseFormat - Specifies the desired format of the response (e.g. JSON)
+ * @param options.seed - Random seed for deterministic generation
+ */
 export class QwenChatLanguageModel implements LanguageModelV1 {
   readonly specificationVersion = "v1"
 
@@ -109,6 +137,12 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
   private readonly failedResponseHandler: ResponseHandler<APICallError>
   private readonly chunkSchema // type inferred via constructor
 
+  /**
+   * Constructs a new QwenChatLanguageModel.
+   * @param modelId - The model identifier.
+   * @param settings - Settings for the chat.
+   * @param config - Model configuration.
+   */
   constructor(
     modelId: QwenChatModelId,
     settings: QwenChatSettings,
@@ -118,7 +152,7 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
     this.settings = settings
     this.config = config
 
-    // initialize error handling:
+    // Initialize error handling using provided or default error structure.
     const errorStructure
         = config.errorStructure ?? defaultQwenErrorStructure
     this.chunkSchema = createQwenChatChunkSchema(
@@ -129,18 +163,33 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
     this.supportsStructuredOutputs = config.supportsStructuredOutputs ?? false
   }
 
+  /**
+   * Getter for the default object generation mode.
+   */
   get defaultObjectGenerationMode(): "json" | "tool" | undefined {
     return this.config.defaultObjectGenerationMode
   }
 
+  /**
+   * Getter for the provider name.
+   */
   get provider(): string {
     return this.config.provider
   }
 
+  /**
+   * Internal getter that extracts the provider options name.
+   * @private
+   */
   private get providerOptionsName(): string {
     return this.config.provider.split(".")[0].trim()
   }
 
+  /**
+   * Prepares arguments for API calls based on provided options.
+   * @param options - Options for generating output.
+   * @returns An object containing the API arguments and any warnings.
+   */
   private getArgs({
     mode,
       prompt,
@@ -155,10 +204,12 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
       responseFormat,
       seed,
   }: Parameters<LanguageModelV1["doGenerate"]>[0]) {
+    // Determine the type of generation mode.
     const type = mode.type
 
     const warnings: LanguageModelV1CallWarning[] = []
 
+    // Warn if unsupported settings are used:
     if (topK != null) {
       warnings.push({
         type: "unsupported-setting",
@@ -215,6 +266,7 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
       messages: convertToQwenChatMessages(prompt),
     }
 
+    // Handling various generation modes.
     switch (type) {
       case "regular": {
         const { tools, tool_choice, toolWarnings } = prepareTools({
@@ -278,6 +330,11 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
     }
   }
 
+  /**
+   * Generates a text response from the model.
+   * @param options - Generation options.
+   * @returns A promise resolving with the generation result.
+   */
   async doGenerate(
     options: Parameters<LanguageModelV1["doGenerate"]>[0],
   ): Promise<Awaited<ReturnType<LanguageModelV1["doGenerate"]>>> {
@@ -285,6 +342,7 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
 
     const body = JSON.stringify(args)
 
+    // Send request for generation using POST JSON.
     const {
       responseHeaders,
       value: responseBody,
@@ -310,6 +368,7 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
       parsedBody,
     })
 
+    // Return structured generation details.
     return {
       text: choice.message.content ?? undefined,
       reasoning: choice.message.reasoning_content ?? undefined,
@@ -333,13 +392,20 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
     }
   }
 
+  /**
+   * Returns a stream of model responses.
+   * @param options - Stream generation options.
+   * @returns A promise resolving with the stream and additional metadata.
+   */
   async doStream(
     options: Parameters<LanguageModelV1["doStream"]>[0],
   ): Promise<Awaited<ReturnType<LanguageModelV1["doStream"]>>> {
     if (this.settings.simulateStreaming) {
+      // Simulate streaming by generating a full response and splitting it.
       const result = await this.doGenerate(options)
       const simulatedStream = new ReadableStream<LanguageModelV1StreamPart>({
         start(controller) {
+          // Send metadata then text deltas.
           controller.enqueue({ type: "response-metadata", ...result.response })
           if (result.reasoning) {
             controller.enqueue({
@@ -381,6 +447,7 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
 
     const { args, warnings } = this.getArgs({ ...options })
 
+    // Set stream flag to true for the API.
     const body = JSON.stringify({ ...args, stream: true })
     const metadataExtractor
         = this.config.metadataExtractor?.createStreamExtractor()
@@ -431,9 +498,9 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
           ParseResult<z.infer<typeof this.chunkSchema>>,
           LanguageModelV1StreamPart
         >({
-          // TODO we lost type safety on Chunk, most likely due to the error schema. MUST FIX
+          // Transforms incoming chunks and maps them to stream parts.
           transform(chunk, controller) {
-            // handle failed chunk parsing / validation:
+            // If validation fails, emit an error.
             if (!chunk.success) {
               finishReason = "error"
               controller.enqueue({ type: "error", error: chunk.error })
@@ -443,7 +510,7 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
 
             metadataExtractor?.processChunk(chunk.rawValue)
 
-            // handle error chunks:
+            // If API sends an error field in the value.
             if ("error" in value) {
               finishReason = "error"
               controller.enqueue({ type: "error", error: value.error.message })
@@ -480,7 +547,7 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
 
             const delta = choice.delta
 
-            // enqueue reasoning before text deltas:
+            // Emit reasoning before the main content.
             if (delta.reasoning_content != null) {
               controller.enqueue({
                 type: "reasoning",
@@ -495,6 +562,7 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
               })
             }
 
+            // Process and merge tool call deltas.
             if (delta.tool_calls != null) {
               for (const toolCallDelta of delta.tool_calls) {
                 const index = toolCallDelta.index
@@ -537,7 +605,6 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
                     toolCall.function?.name != null
                     && toolCall.function?.arguments != null
                   ) {
-                    // send delta if the argument text has already started:
                     if (toolCall.function.arguments.length > 0) {
                       controller.enqueue({
                         type: "tool-call-delta",
@@ -548,8 +615,7 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
                       })
                     }
 
-                    // check if tool call is complete
-                    // (some providers send the full tool call in one chunk):
+                    // If the accumulated arguments are valid JSON, finish the tool call.
                     if (isParsableJson(toolCall.function.arguments)) {
                       controller.enqueue({
                         type: "tool-call",
@@ -565,7 +631,7 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
                   continue
                 }
 
-                // existing tool call, merge if not finished
+                // Merge new delta with ongoing tool call.
                 const toolCall = toolCalls[index]
 
                 if (toolCall.hasFinished) {
@@ -577,7 +643,6 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
                       += toolCallDelta.function?.arguments ?? ""
                 }
 
-                // send delta
                 controller.enqueue({
                   type: "tool-call-delta",
                   toolCallType: "function",
@@ -586,7 +651,6 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
                   argsTextDelta: toolCallDelta.function.arguments ?? "",
                 })
 
-                // check if tool call is complete
                 if (
                   toolCall.function?.name != null
                   && toolCall.function?.arguments != null
@@ -606,6 +670,7 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
           },
 
           flush(controller) {
+            // Build final metadata and finish streaming.
             const metadata = metadataExtractor?.buildMetadata()
             controller.enqueue({
               type: "finish",
