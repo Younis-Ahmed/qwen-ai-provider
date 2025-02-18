@@ -80,6 +80,12 @@ implements EmbeddingModelV1<string> {
     this.config = config
   }
 
+  /**
+   * Executes a text embedding call for a list of input values.
+   * Validates the number of inputs and makes an HTTP call to the embedding endpoint.
+   * @param param0 An object containing input values, optional headers, and an abort signal.
+   * @returns An object containing embeddings, usage info, and raw response headers.
+   */
   async doEmbed({
     values,
       headers,
@@ -87,6 +93,7 @@ implements EmbeddingModelV1<string> {
   }: Parameters<EmbeddingModelV1<string>["doEmbed"]>[0]): Promise<
       Awaited<ReturnType<EmbeddingModelV1<string>["doEmbed"]>>
     > {
+    // Validate that number of embeddings does not exceed maximum allowed.
     if (values.length > this.maxEmbeddingsPerCall) {
       throw new TooManyEmbeddingValuesForCallError({
         provider: this.provider,
@@ -96,6 +103,7 @@ implements EmbeddingModelV1<string> {
       })
     }
 
+    // Post the JSON payload to the API endpoint.
     const { responseHeaders, value: response } = await postJsonToApi({
       url: this.config.url({
         path: "/embeddings",
@@ -109,9 +117,11 @@ implements EmbeddingModelV1<string> {
         dimensions: this.settings.dimensions,
         user: this.settings.user,
       },
+      // Handle response errors using the provided error structure.
       failedResponseHandler: createJsonErrorResponseHandler(
         this.config.errorStructure ?? defaultQwenErrorStructure,
       ),
+      // Process successful responses based on a minimal schema.
       successfulResponseHandler: createJsonResponseHandler(
         qwenTextEmbeddingResponseSchema,
       ),
@@ -119,6 +129,7 @@ implements EmbeddingModelV1<string> {
       fetch: this.config.fetch,
     })
 
+    // Map response data to output format.
     return {
       embeddings: response.data.map(item => item.embedding),
       usage: response.usage
