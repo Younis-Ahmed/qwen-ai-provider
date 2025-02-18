@@ -1,5 +1,3 @@
-import type { OpenAICompatibleChatSettings } from "@ai-sdk/openai-compatible"
-
 // https://www.alibabacloud.com/help/en/model-studio/getting-started/models
 export type QwenChatModelId =
 // Text Geeration
@@ -28,23 +26,16 @@ export type QwenChatModelId =
   | "qwen2.5-vl-3b-instruct"
   | (string & {})
 
-// New interface for tool objects
-export interface ChatTool {
-  type: "function"
-  function: Record<string, any> // ...customize as needed...
-}
-
-export interface QwenChatSettings extends OpenAICompatibleChatSettings {
-
-  // Optional properties
-  stream?: boolean
-  stream_options?: { include_usage: boolean }
-  temperature?: number // Valid values: [0,2)
-  top_p?: number // Valid values: (0,1.0]
-  presence_penalty?: number // Valid values: [-2.0, 2.0]
-  response_format?: { type: "text" } | { type: "json_object" }
-  max_tokens?: number
-  seed?: number
-  stop?: string | (string | number)[]
-  tools?: ChatTool[]
+export interface QwenChatSettings {
+  /**
+A unique identifier representing your end-user, which can help the provider to
+monitor and detect abuse.
+   */
+  user?: string
+  /**
+Simulates streaming by using a normal generate call and returning it as a stream.
+Enable this if the model that you are using does not support streaming.
+Defaults to `false`.
+   */
+  simulateStreaming?: boolean
 }
