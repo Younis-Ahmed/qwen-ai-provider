@@ -13,12 +13,10 @@ import type {
   QwenEmbeddingModelId,
   QwenEmbeddingSettings,
 } from "./qwen-embedding-settings"
-import {
-  OpenAICompatibleChatLanguageModel,
-  OpenAICompatibleCompletionLanguageModel,
-  OpenAICompatibleEmbeddingModel,
-} from "@ai-sdk/openai-compatible"
 import { loadApiKey, withoutTrailingSlash } from "@ai-sdk/provider-utils"
+import { QwenChatLanguageModel } from "./qwen-chat-language-model"
+import { QwenCompletionLanguageModel } from "./qwen-completion-language-model"
+import { QwenEmbeddingModel } from "./qwen-embedding-model"
 
 export interface QwenProvider extends ProviderV1 {
   (modelId: QwenChatModelId, settings?: QwenChatSettings): LanguageModelV1
@@ -126,7 +124,7 @@ export function createQwen(options: QwenProviderSettings = {}): QwenProvider {
     modelId: QwenChatModelId,
     settings: QwenChatSettings = {},
   ) =>
-    new OpenAICompatibleChatLanguageModel(modelId, settings, {
+    new QwenChatLanguageModel(modelId, settings, {
       ...getCommonModelConfig("chat"),
       defaultObjectGenerationMode: "tool",
     })
@@ -135,7 +133,7 @@ export function createQwen(options: QwenProviderSettings = {}): QwenProvider {
     modelId: QwenCompletionModelId,
     settings: QwenCompletionSettings = {},
   ) =>
-    new OpenAICompatibleCompletionLanguageModel(
+    new QwenCompletionLanguageModel(
       modelId,
       settings,
       getCommonModelConfig("completion"),
@@ -145,7 +143,7 @@ export function createQwen(options: QwenProviderSettings = {}): QwenProvider {
     modelId: QwenEmbeddingModelId,
     settings: QwenEmbeddingSettings = {},
   ) =>
-    new OpenAICompatibleEmbeddingModel(
+    new QwenEmbeddingModel(
       modelId,
       settings,
       getCommonModelConfig("embedding"),
