@@ -1,22 +1,35 @@
-import {
-  OpenAICompatibleChatLanguageModel,
-  OpenAICompatibleCompletionLanguageModel,
-  OpenAICompatibleEmbeddingModel,
-} from "@ai-sdk/openai-compatible"
 import { loadApiKey } from "@ai-sdk/provider-utils"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { QwenChatLanguageModel } from "./qwen-chat-language-model"
+import { QwenCompletionLanguageModel } from "./qwen-completion-language-model"
+import { QwenEmbeddingModel } from "./qwen-embedding-model"
 import { createQwen } from "./qwen-provider"
 
-// Mocks
-vi.mock("@ai-sdk/openai-compatible", () => ({
-  OpenAICompatibleChatLanguageModel: vi.fn(),
-  OpenAICompatibleCompletionLanguageModel: vi.fn(),
-  OpenAICompatibleEmbeddingModel: vi.fn(),
+// Mock the model classes
+vi.mock("./qwen-chat-language-model", () => ({
+  QwenChatLanguageModel: vi.fn(),
+}))
+
+vi.mock("./qwen-completion-language-model", () => ({
+  QwenCompletionLanguageModel: vi.fn(),
+}))
+
+vi.mock("./qwen-embedding-model", () => ({
+  QwenEmbeddingModel: vi.fn(),
 }))
 
 vi.mock("@ai-sdk/provider-utils", () => ({
   loadApiKey: vi.fn().mockReturnValue("mock-api-key"),
   withoutTrailingSlash: vi.fn((url: string) => url),
+  createJsonErrorResponseHandler: vi.fn().mockImplementation((options) => {
+    return async (response: Response) => {
+      const error = await response.json()
+      return {
+        message: options.errorToMessage(error),
+        cause: error,
+      }
+    }
+  }),
 }))
 
 describe("qwenProvider", () => {
@@ -32,7 +45,7 @@ describe("qwenProvider", () => {
       // Create a model with a provider
       provider("test-model", {})
       // Get the constructor call for the Chat Language Model
-      const constructorCall = vi.mocked(OpenAICompatibleChatLanguageModel).mock.calls[0]
+      const constructorCall = vi.mocked(QwenChatLanguageModel).mock.calls[0]
       const config = constructorCall[2]
       // Invoke headers if needed by the configuration
       config.headers && config.headers()
@@ -46,7 +59,7 @@ describe("qwenProvider", () => {
 
     it("should create a chat model when called as a function", () => {
       provider("chat-model", { user: "test-user" })
-      expect(OpenAICompatibleChatLanguageModel).toHaveBeenCalled()
+      expect(QwenChatLanguageModel).toHaveBeenCalled()
     })
   })
 
@@ -54,7 +67,7 @@ describe("qwenProvider", () => {
     it("should construct a chat model with correct configuration", () => {
       const settings = { user: "foo-user" }
       provider.chatModel("qwen-chat-model", settings)
-      expect(OpenAICompatibleChatLanguageModel).toHaveBeenCalledWith(
+      expect(QwenChatLanguageModel).toHaveBeenCalledWith(
         "qwen-chat-model",
         settings,
         expect.objectContaining({
@@ -69,7 +82,7 @@ describe("qwenProvider", () => {
     it("should construct a completion model with correct configuration", () => {
       const settings = { user: "foo-user" }
       provider.completion("qwen-turbo", settings)
-      expect(OpenAICompatibleCompletionLanguageModel).toHaveBeenCalledWith(
+      expect(QwenCompletionLanguageModel).toHaveBeenCalledWith(
         "qwen-turbo",
         settings,
         expect.objectContaining({
@@ -83,7 +96,7 @@ describe("qwenProvider", () => {
     it("should construct a text embedding model with correct configuration", () => {
       const settings = { user: "foo-user" }
       provider.textEmbeddingModel("qwen-vl-plus", settings)
-      expect(OpenAICompatibleEmbeddingModel).toHaveBeenCalledWith(
+      expect(QwenEmbeddingModel).toHaveBeenCalledWith(
         "qwen-vl-plus",
         settings,
         expect.objectContaining({
@@ -96,7 +109,7 @@ describe("qwenProvider", () => {
   describe("languageModel alias", () => {
     it("should return a chat model when called via languageModel", () => {
       provider.languageModel("qwen-chat-model", { user: "alias" })
-      expect(OpenAICompatibleChatLanguageModel).toHaveBeenCalled()
+      expect(QwenChatLanguageModel).toHaveBeenCalled()
     })
   })
 })
