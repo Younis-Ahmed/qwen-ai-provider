@@ -5,6 +5,8 @@ import { QwenCompletionLanguageModel } from "./qwen-completion-language-model"
 import { QwenEmbeddingModel } from "./qwen-embedding-model"
 import { createQwen } from "./qwen-provider"
 
+vi.stubEnv("DASHSCOPE_API_KEY", "test-api-key-123")
+
 // Mock the model classes
 vi.mock("./qwen-chat-language-model", () => ({
   QwenChatLanguageModel: vi.fn(),
@@ -19,7 +21,7 @@ vi.mock("./qwen-embedding-model", () => ({
 }))
 
 vi.mock("@ai-sdk/provider-utils", () => ({
-  loadApiKey: vi.fn().mockReturnValue("mock-api-key"),
+  loadApiKey: vi.fn().mockReturnValue("test-api-key-123"),
   withoutTrailingSlash: vi.fn((url: string) => url),
   createJsonErrorResponseHandler: vi.fn().mockImplementation((options) => {
     return async (response: Response) => {
