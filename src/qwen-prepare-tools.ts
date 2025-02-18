@@ -6,6 +6,11 @@ import {
   UnsupportedFunctionalityError,
 } from "@ai-sdk/provider"
 
+/**
+ * Prepares the tool configuration for language model generation.
+ * @param param0 Object containing mode details and structured output flag.
+ * @returns An object with tools, tool choice and any warnings.
+ */
 export function prepareTools({
   mode,
 }: {
@@ -32,7 +37,7 @@ export function prepareTools({
       | undefined
     toolWarnings: LanguageModelV1CallWarning[]
   } {
-  // when the tools array is empty, change it to undefined to prevent errors:
+  // Normalize tools array by converting empty array to undefined.
   const tools = mode.tools?.length ? mode.tools : undefined
   const toolWarnings: LanguageModelV1CallWarning[] = []
 
@@ -41,7 +46,6 @@ export function prepareTools({
   }
 
   const toolChoice = mode.toolChoice
-
   const qwenCompatTools: Array<{
     type: "function"
     function: {
@@ -51,8 +55,10 @@ export function prepareTools({
     }
   }> = []
 
+  // Process each tool and format for compatibility.
   for (const tool of tools) {
     if (tool.type === "provider-defined") {
+      // Warn if the tool is provider-defined.
       toolWarnings.push({ type: "unsupported-tool", tool })
     }
     else {
@@ -73,6 +79,7 @@ export function prepareTools({
 
   const type = toolChoice.type
 
+  // Determine tool choice strategy.
   switch (type) {
     case "auto":
     case "none":
@@ -90,6 +97,7 @@ export function prepareTools({
         toolWarnings,
       }
     default: {
+      // Exhaustive check to ensure all cases are handled.
       const _exhaustiveCheck: never = type
       throw new UnsupportedFunctionalityError({
         functionality: `Unsupported tool choice type: ${_exhaustiveCheck}`,
