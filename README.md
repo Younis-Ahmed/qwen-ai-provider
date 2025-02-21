@@ -1,17 +1,89 @@
-# qwen-ai-provider
+# Qwen AI Provider for Vercel AI SDK  
+[![Qwen Supported](https://img.shields.io/badge/Vercel_AI_SDK-Qwen_Provider-blue)](https://sdk.vercel.ai/providers/community-providers/qwen)
 
-Qwen AI Provider for interacting with Qwen models via Alibaba Cloud's Model Studio API.
 
-## Requirements
+[younis-ahmed/qwen-vercel-ai-sdk-provider](https://github.com/younis-ahmed/qwen-ai-provider) enables seamless integration of **Alibaba Cloud's Qwen language models** with applications built using **Vercel AI SDK**. This community-maintained provider supports:  
 
-This provider requires a valid Qwen API key and adherence to the API specifications provided by Alibaba Cloud.
+- Full compatibility with Vercel AI SDK's `generateText`, `streamText`, and tool-calling functions.
+- 15+ Qwen models including `qwen-plus`, `qwen-vl-max`, and `qwen2.5 series`.
+- Customizable API configurations for enterprise deployments.
 
-## Installation
+---
 
-The qwen-ai-provider is available as an npm package. You can install it with:
+
+## Diagram
+<!-- Description or alt text for the diagram -->
+### Architecture diagram showing Qwen provider integration with Vercel AI SDK
+
+```mermaid
+graph TD
+    A[Next.js Application] --> B[Vercel AI SDK Core]
+    B --> C{AI Provider}
+    C --> D[qwen-ai-provider]
+    C --> E[Community Providers]
+    
+    D --> F[Qwen API Endpoints]
+    F --> G[Qwen-plus]
+    F --> H[Qwen-vl-max]
+    F --> I[Qwen-max]
+    
+    B --> J[AI SDK Functions]
+    J --> K["generateText()"]
+    J --> L["streamText()"]
+    J --> M["generateObject()"]
+    J --> N["streamUI()"]
+    
+    A --> O[Environment Variables]
+    O --> P["DASHSCOPE_API_KEY"]
+    O --> Q["AI_PROVIDER=qwen"]
+    
+    subgraph Provider Configuration
+        D --> R["createQwen({
+          baseURL: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+          apiKey: env.DASHSCOPE_API_KEY
+        })"]
+        R --> S[Model Instance]
+        S --> T["qwen('qwen-plus')"]
+    end
+    
+    subgraph Response Handling
+        K --> U[Text Output]
+        L --> V[Streaming Response]
+        M --> W[Structured JSON]
+        N --> X[UI Components]
+    end
+
+    style D fill:#74aa63,color:#fff
+    style E fill:#4f46e5,color:#fff
+    style J fill:#f59e0b,color:#000
+```
+
+
+---
+
+
+## Enviroment Variable
+```ts
+DASHSCOPE_API_KEY=""
+```
+
+## Setup
+
+The Qwen provider is available in the `qwen-ai-provider` module. You can install it with:
 
 ```bash
-npm i qwen-ai-provider
+# For pnpm
+pnpm add qwen-ai-provider
+```
+
+```bash
+# For npm
+npm install qwen-ai-provider
+```
+
+```bash
+# For yarn
+yarn add qwen-ai-provider
 ```
 
 ## Provider Instance
@@ -19,92 +91,86 @@ npm i qwen-ai-provider
 You can import the default provider instance `qwen` from `qwen-ai-provider`:
 
 ```ts
-import { qwen } from "qwen-ai-provider"
+import { qwen } from 'qwen-ai-provider';
 ```
 
 If you need a customized setup, you can import `createQwen` from `qwen-ai-provider` and create a provider instance with your settings:
 
 ```ts
-import { createQwen } from "qwen-ai-provider"
+import { createQwen } from 'qwen-ai-provider';
 
-const qwenProvider = createQwen({
-  // custom settings, e.g.:
-  apiKey: "YOUR_QWEN_API_KEY",
-  baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-  headers: { "Custom-Header": "value" },
-})
+const qwen = createQwen({
+  // optional settings, e.g.
+  // baseURL: 'https://qwen/api/v1',
+});
 ```
 
-The following optional settings can be provided:
+You can use the following optional settings to customize the Qwen provider instance:
 
 - **baseURL** _string_
 
-  Use a different URL prefix for API calls, e.g. to use proxy servers.
-  The default is `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`.
+  Use a different URL prefix for API calls, e.g., to use proxy servers. The default prefix is `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`.
 
 - **apiKey** _string_
 
-  Qwen API key, defaults to the `DASHSCOPE_API_KEY` environment variable.
+  API key that is being sent using the `Authorization` header. It defaults to the `DASHSCOPE_API_KEY` environment variable.
 
-- **headers** _Record<string,string>_
+- **headers** _Record&lt;string,string&gt;_
 
-  Custom headers to include in requests.
+  Custom headers to include in the requests.
 
-- **queryParams** _Record<string,string>_
+- **fetch** _(input: RequestInfo, init?: RequestInit) => Promise&lt;Response&gt;_
 
-  Optional URL query parameters for API calls.
+  Custom [fetch](https://developer.mozilla.org/en-US/docs/Web/API/fetch) implementation. Defaults to the global `fetch` function. You can use it as a middleware to intercept requests, or to provide a custom fetch implementation for e.g., testing.
 
-- **fetch** _FetchFunction_
+## Language Models
 
-  Custom fetch implementation, useful for testing or middleware.
-
-## Models
-
-The provider supports text generation/chat and embeddings.
-The first argument is the model id. For example:
+You can create models that call the [Qwen chat API](https://www.alibabacloud.com/help/en/model-studio/developer-reference/use-qwen-by-calling-api) using a provider instance. The first argument is the model id, e.g., `qwen-plus`. Some Qwen chat models support tool calls.
 
 ```ts
-const chatModel = qwen("qwen-plus")
+const model = qwen('qwen-plus');
 ```
 
-Other model functions include:
+### Example
 
-- `qwen.chatModel(modelId, settings)`
-- `qwen.completion(modelId, settings)`
-- `qwen.textEmbeddingModel(modelId, settings)`
-- `qwen.languageModel(modelId, settings)` (alias for `chatModel`)
+You can use Qwen language models to generate text with the `generateText` function:
 
-## Tested Models and Capabilities
+```ts
+import { qwen } from 'qwen-ai-provider';
+import { generateText } from 'ai';
 
-This provider has been tested with Qwen models and supports a range of features:
+const { text } = await generateText({
+  model: qwen('qwen-plus'),
+  prompt: 'Write a vegetarian lasagna recipe for 4 people.',
+});
+```
+> **Note**
+> Qwen language models can also be used in the `streamText`, `generateObject`, `streamObject`, and `streamUI` functions (see [AI SDK Core](/docs/ai-sdk-core) and [AI SDK RSC](/docs/ai-sdk-rsc)).
 
-| Feature              | Support                           |
-| -------------------- | --------------------------------- |
-| Text generation      | :white_check_mark:                |
-| Streaming output     | :white_check_mark: (if supported) |
-| Object generation    | :white_check_mark:                |
-| Embedding generation | :white_check_mark:                |
+### Model Capabilities
 
-## Usage Details
+| Model                     | Image Input | Object Generation | Tool Usage | Tool Streaming |
+| ------------------------- | ----------- | ----------------- | ---------- | -------------- |
+| `qwen-vl-max`             | ✔️           | ✔️                 | ✔️          | ✔️              |
+| `qwen-plus-latest`        | ❌           | ✔️                 | ✔️          | ✔️              |
+| `qwen-max`                | ❌           | ✔️                 | ✔️          | ✔️              |
+| `qwen2.5-72b-instruct`    | ❌           | ✔️                 | ✔️          | ✔️              |
+| `qwen2.5-14b-instruct-1m` | ❌           | ✔️                 | ✔️          | ✔️              |
+| `qwen2.5-vl-72b-instruct` | ✔️           | ✔️                 | ✔️          | ✔️              |
 
-- **Chat Settings**
+> **Note**  
+> The table above lists popular models. Please see the [Qwen docs](https://www.alibabacloud.com/help/en/model-studio/getting-started/models) for a full list of available models. You can also pass any available provider model ID as a string if needed.
 
-  The settings object allows you to fine-tune model behavior, including streaming, temperature control, and tool integration. See inline documentation in the source code for more details.
+## Embedding Models
 
-- **Tool Integration**
+You can create models that call the [Qwen embeddings API](https://www.alibabacloud.com/help/en/model-studio/getting-started/models#cff6607866tsg) using the `.textEmbeddingModel()` factory method.
 
-  Some Qwen models support tool usage for function calls. Configure the `tools` property in your settings as needed.
-
-- **Versioning and Packaging**
-
-  When publishing packages (e.g. on GitHub Packages), the provider supports pre-release versioning and packaging via GitHub Actions.
-
-## Testing
-
-This package includes a suite of tests using Vitest. To run tests:
-
-```bash
-npm run test
+```ts
+const model = qwen.textEmbeddingModel('text-embedding-v3');
 ```
 
-For more details, review the test files in the repository.
+### Model Capabilities
+
+| Model               | Default Dimensions | Maximum number of rows | Maximum tokens per row |
+| ------------------- | ------------------ | ---------------------- | ---------------------- |
+| `text-embedding-v3` | 1024               | 6                      | 8,192                  |
