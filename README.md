@@ -150,13 +150,13 @@ const { text } = await generateText({
 ### Model Capabilities
 
 | Model                     | Image Input | Object Generation | Tool Usage | Tool Streaming |
-| ------------------------- | ----------- | ----------------- | ---------- | -------------- |
-| `qwen-vl-max`             | ✔️           | ✔️                 | ✔️          | ✔️              |
-| `qwen-plus-latest`        | ❌           | ✔️                 | ✔️          | ✔️              |
-| `qwen-max`                | ❌           | ✔️                 | ✔️          | ✔️              |
-| `qwen2.5-72b-instruct`    | ❌           | ✔️                 | ✔️          | ✔️              |
-| `qwen2.5-14b-instruct-1m` | ❌           | ✔️                 | ✔️          | ✔️              |
-| `qwen2.5-vl-72b-instruct` | ✔️           | ✔️                 | ✔️          | ✔️              |
+| ------------------------- | ------------------ | ----------------- | ------------------ | ------------------ |
+| `qwen-vl-max`             | :heavy_check_mark: | :heavy_check_mark:| :heavy_check_mark: | :heavy_check_mark: |
+| `qwen-plus-latest`        | :x:                | :heavy_check_mark:| :heavy_check_mark: | :heavy_check_mark: |
+| `qwen-max`                | :x:                | :heavy_check_mark:| :heavy_check_mark: | :heavy_check_mark: |
+| `qwen2.5-72b-instruct`    | :x:                | :heavy_check_mark:| :heavy_check_mark: | :heavy_check_mark: |
+| `qwen2.5-14b-instruct-1m` | :x:                | :heavy_check_mark:| :heavy_check_mark: | :heavy_check_mark: |
+| `qwen2.5-vl-72b-instruct` | :heavy_check_mark: | :heavy_check_mark:| :heavy_check_mark: | :heavy_check_mark: |
 
 > **Note**  
 > The table above lists popular models. Please see the [Qwen docs](https://www.alibabacloud.com/help/en/model-studio/getting-started/models) for a full list of available models. You can also pass any available provider model ID as a string if needed.
