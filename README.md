@@ -174,3 +174,243 @@ const model = qwen.textEmbeddingModel('text-embedding-v3');
 | Model               | Default Dimensions | Maximum number of rows | Maximum tokens per row |
 | ------------------- | ------------------ | ---------------------- | ---------------------- |
 | `text-embedding-v3` | 1024               | 6                      | 8,192                  |
+
+
+
+## Examples
+
+Below are comprehensive examples demonstrating various AI functionalities:
+
+
+### generate-text.ts
+
+```typescript
+// Import the text generation function from the AI package
+import { generateText } from "ai"
+
+// Import the qwen function from qwen-ai-provider to select the AI model
+import { qwen } from "qwen-ai-provider"
+
+// Use generateText with a specific model and prompt to generate AI text
+// The qwen function selects the 'qwen-plus' model
+const result = await generateText({
+  model: qwen("qwen-plus"), // Select the desired AI model
+  prompt: "Why is the sky blue?", // Define the prompt for the AI
+})
+
+// Log the result from the AI text generation
+console.log(result)
+
+```
+
+### generate-text-image-prompt.ts
+```typescript
+import { generateText } from 'ai';
+import { qwen } from 'qwen-ai-provider'
+
+const result = await generateText({
+  model: qwen('qwen-plus'),
+  maxTokens: 512,
+  messages: [
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: 'what are the red things in this image?',
+        },
+        {
+          type: 'image',
+          image: new URL(
+            'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/2024_Solar_Eclipse_Prominences.jpg/720px-2024_Solar_Eclipse_Prominences.jpg',
+          ),
+        },
+      ],
+    },
+  ],
+});
+
+console.log(result);
+```
+
+### generate-text-chat-prompt.ts
+```typescript
+import { generateText } from 'ai';
+import { qwen } from 'qwen-ai-provider';
+
+const result = await generateText({
+  model: qwen('qwen-plus'),
+  maxTokens: 1024,
+  system: 'You are a helpful chatbot.',
+  messages: [
+    {
+      role: 'user',
+      content: 'Hello!',
+    },
+    {
+      role: 'assistant',
+      content: 'Hello! How can I help you today?',
+    },
+    {
+      role: 'user',
+      content: 'I need help with my computer.',
+    },
+  ],
+});
+
+console.log(result.text);
+```
+
+### generate-obj.ts
+```typescript
+import { generateObject } from 'ai';
+import { qwen } from 'qwen-ai-provider';
+import { z } from 'zod';
+
+const result = await generateObject({
+  model: qwen('qwen-plus'),
+  schema: z.object({
+    recipe: z.object({
+      name: z.string(),
+      ingredients: z.array(
+        z.object({
+          name: z.string(),
+          amount: z.string(),
+        }),
+      ),
+      steps: z.array(z.string()),
+    }),
+  }),
+  prompt: 'Generate a lasagna recipe.',
+});
+
+console.log(JSON.stringify(result.object.recipe, null, 2));
+```
+
+### generate-obj-reasoning-mdl.ts
+```typescript
+import { qwen } from 'qwen-ai-provider';
+import { generateObject, generateText } from 'ai';
+import 'dotenv/config';
+import { z } from 'zod';
+
+async function main() {
+  const { text: rawOutput } = await generateText({
+    model: qwen('qwen-max'),
+    prompt:
+      'Predict the top 3 largest city by 2050. For each, return the name, the country, the reason why it will on the list, and the estimated population in millions.',
+  });
+
+  const { object } = await generateObject({
+    model: qwen('qwen-max'),
+    prompt: 'Extract the desired information from this text: \n' + rawOutput,
+    schema: z.object({
+      name: z.string().describe('the name of the city'),
+      country: z.string().describe('the name of the country'),
+      reason: z
+        .string()
+        .describe(
+          'the reason why the city will be one of the largest cities by 2050',
+        ),
+      estimatedPopulation: z.number(),
+    }),
+    output: 'array',
+  });
+
+  console.log(object);
+}
+
+main().catch(console.error);
+```
+
+### embed-text.ts
+```typescript
+import { qwen } from 'qwen-ai-provider';
+import { embed } from 'ai';
+import 'dotenv/config';
+
+async function main() {
+  const { embedding, usage } = await embed({
+    model: qwen.textEmbeddingModel('text-embedding-v3'),
+    value: 'sunny day at the beach',
+  });
+
+  console.log(embedding);
+  console.log(usage);
+}
+
+main().catch(console.error);
+```
+
+### embed-text-batch.ts
+```typescript
+import { qwen } from 'qwen-ai-provider';
+import { embedMany } from 'ai';
+import 'dotenv/config';
+
+async function main() {
+  const { embeddings, usage } = await embedMany({
+    model: qwen.textEmbeddingModel('text-embedding-v3'),
+    values: [
+      'sunny day at the beach',
+      'rainy afternoon in the city',
+      'snowy night in the mountains',
+    ],
+  });
+
+  console.log(embeddings);
+  console.log(usage);
+}
+
+main().catch(console.error);
+```
+
+### call-tools.ts
+```typescript
+import { generateText, tool } from 'ai';
+import { qwen } from 'qwen-ai-provider';
+import { z } from 'zod';
+
+const result = await generateText({
+  model: qwen('qwen-plus'),
+  tools: {
+    weather: tool({
+      description: 'Get the weather in a location',
+      parameters: z.object({
+        location: z.string().describe('The location to get the weather for'),
+      }),
+      execute: async ({ location }) => ({
+        location,
+        temperature: 72 + Math.floor(Math.random() * 21) - 10,
+      }),
+    }),
+    cityAttractions: tool({
+      parameters: z.object({ city: z.string() }),
+    }),
+  },
+  prompt:
+    'What is the weather in San Francisco and what attractions should I visit?',
+});
+```
+
+### record-token-usage-after-streaming-obj.ts
+```typescript
+import { qwen } from 'qwen-ai-provider';
+import { streamObject } from 'ai';
+import { z } from 'zod';
+
+const result = streamObject({
+  model: qwen('qwen-plus'),
+  schema: z.object({
+    recipe: z.object({
+      name: z.string(),
+      ingredients: z.array(z.string()),
+      steps: z.array(z.string()),
+    }),
+  }),
+  prompt: 'Generate a lasagna recipe.',
+  onFinish({ usage }) {
+    console.log('Token usage:', usage);
+  },
+});
+```
