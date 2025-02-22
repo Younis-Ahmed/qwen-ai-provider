@@ -1,6 +1,15 @@
 # Qwen AI Provider for Vercel AI SDK  
 [![Qwen Supported](https://img.shields.io/badge/Vercel_AI_SDK-Qwen_Provider-blue)](https://sdk.vercel.ai/providers/community-providers/qwen)
 
+## Table of Contents
+- [Qwen AI Provider for Vercel AI SDK](#qwen-ai-provider-for-vercel-ai-sdk)
+- [Diagram](#diagram)
+- [Environment Variable](#enviroment-variable)
+- [Setup](#setup)
+- [Provider Instance](#provider-instance)
+- [Language Models](#language-models)
+- [Embedding Models](#embedding-models)
+- [Examples](#examples)
 
 [younis-ahmed/qwen-vercel-ai-sdk-provider](https://github.com/younis-ahmed/qwen-ai-provider) enables seamless integration of **Alibaba Cloud's Qwen language models** with applications built using **Vercel AI SDK**. This community-maintained provider supports:  
 
