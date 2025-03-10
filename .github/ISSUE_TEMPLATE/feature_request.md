@@ -1,29 +1,57 @@
 ---
-name: Feature request
-about: Suggest a new feature for the AI SDK provider
-title: ''
-labels: ''
-assignees: ''
+name: Feature Request
+about: Suggest a new feature or improvement for this project
+title: "[Feature Request] <Brief Title>"
+labels: feature request
+assignees: 
 ---
 
 # Feature Request
 
-## Describe the feature
+## Summary
+<!-- Provide a concise summary of the feature request. -->
+Example: Add raw response for API.
 
-A clear and concise description of the feature you are proposing.
+---
 
-## Motivation
+## Problem Statement
+<!-- Describe the problem or limitation that this feature aims to solve. -->
+Example: Users may want the raw response to transform with middleware.
 
-Explain why this feature is needed and what problems it will solve.
+---
 
-## Proposed solution
+## Proposed Solution
+<!-- Explain how this feature would address the problem. -->
+Example: Implement a `raw_response` field in response.
 
-Describe your suggested implementation or desired behavior in detail.
+---
 
-## Alternatives considered
+## Use Cases
+<!-- Provide specific examples of how users would benefit from this feature. -->
+- Mutate with middleware depending on user's use case.
+---
 
-List any alternative solutions or features you've considered.
+## Additional Context
+<!-- Include any other relevant information, screenshots, or links. -->
+Example:
+- Screenshot/Code block of similar functionality in another app.
+```ts
+// Code goes here...
+```
 
-## Additional context
+---
 
-Add any other context, screenshots, or logs about the feature request here.
+## Impact Assessment
+<!-- Explain how this feature will impact users, developers, or the project overall. -->
+
+---
+
+## Checklist
+Please confirm the following:
+- [ ] I have searched existing issues and discussions for duplicates.
+- [ ] This feature is not already implemented or planned.
+- [ ] I am willing to assist with testing or providing feedback during development.
+
+---
+
+Thank you for taking the time to contribute! 🙌
