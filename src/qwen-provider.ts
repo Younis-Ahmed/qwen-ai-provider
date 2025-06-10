@@ -64,7 +64,7 @@ export interface QwenProvider extends ProviderV1 {
 export interface QwenProviderSettings {
   /**
   Use a different URL prefix for API calls, e.g. to use proxy servers.
-  The default prefix is `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`.
+  The default prefix is `https://dashscope.aliyuncs.com/compatible-mode/v1`.
    */
   baseURL?: string
 
@@ -101,7 +101,7 @@ export interface QwenProviderSettings {
 export function createQwen(options: QwenProviderSettings = {}): QwenProvider {
   // Remove trailing slash from the base URL.
   const baseURL = withoutTrailingSlash(
-    options.baseURL ?? "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    options.baseURL ?? "https://dashscope.aliyuncs.com/compatible-mode/v1",
   )
 
   // Build headers including the API key.
