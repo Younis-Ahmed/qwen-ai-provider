@@ -731,7 +731,7 @@ function createQwenChatChunkSchema<ERROR_SCHEMA extends z.ZodType>(errorSchema: 
                   z.object({
                     index: z.number(),
                     id: z.string().nullish(),
-                    type: z.literal("function").optional(),
+                    type: z.literal("function").nullish(),
                     function: z.object({
                       name: z.string().nullish(),
                       arguments: z.string().nullish(),
