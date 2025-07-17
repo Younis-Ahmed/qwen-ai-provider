@@ -1484,6 +1484,9 @@ describe("doStream", () => {
 
     expect(await server.getRequestBodyJson()).toStrictEqual({
       stream: true,
+      stream_options: {
+        include_usage: true,
+      },
       model: "qwen-chat",
       messages: [{ role: "user", content: "Hello" }],
     })
@@ -1535,6 +1538,9 @@ describe("doStream", () => {
 
     expect(await server.getRequestBodyJson()).toStrictEqual({
       stream: true,
+      stream_options: {
+        include_usage: true,
+      },
       model: "qwen-chat",
       messages: [{ role: "user", content: "Hello" }],
     })
@@ -1556,6 +1562,9 @@ describe("doStream", () => {
 
     expect(await server.getRequestBodyJson()).toStrictEqual({
       stream: true,
+      stream_options: {
+        include_usage: true,
+      },
       model: "qwen-chat",
       messages: [{ role: "user", content: "Hello" }],
     })
@@ -1571,7 +1580,7 @@ describe("doStream", () => {
     })
 
     expect(request).toStrictEqual({
-      body: "{\"model\":\"qwen-chat\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"stream\":true}",
+      body: "{\"model\":\"qwen-chat\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"stream\":true,\"stream_options\":{\"include_usage\":true}}",
     })
   })
 })
@@ -1923,6 +1932,9 @@ describe("metadata extraction", () => {
             model: "qwen-plus",
             messages: [{ role: "user", content: "Hello" }],
             stream: true,
+            stream_options: {
+              include_usage: true,
+            },
           })
         })
       },
