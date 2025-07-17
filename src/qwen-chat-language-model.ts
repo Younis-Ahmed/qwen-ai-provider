@@ -466,8 +466,16 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
 
     const { args, warnings } = this.getArgs({ ...options })
 
+    const requestBody = {
+      ...args,
+      stream: true,
+      stream_options: {
+        include_usage: true,
+      },
+    }
+
     // Set stream flag to true for the API.
-    const body = JSON.stringify({ ...args, stream: true })
+    const body = JSON.stringify(requestBody)
     const metadataExtractor
         = this.config.metadataExtractor?.createStreamExtractor()
 
@@ -477,10 +485,7 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
         modelId: this.modelId,
       }),
       headers: combineHeaders(this.config.headers(), options.headers),
-      body: {
-        ...args,
-        stream: true,
-      },
+      body: requestBody,
       failedResponseHandler: this.failedResponseHandler,
       successfulResponseHandler: createEventSourceResponseHandler(
         this.chunkSchema,
