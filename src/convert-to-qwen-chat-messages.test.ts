@@ -123,6 +123,43 @@ describe("tool calls", () => {
   })
 })
 
+describe("assistant messages", () => {
+  it("should convert messages with only a text part to a string content", () => {
+    const result = convertToQwenChatMessages([
+      {
+        role: "assistant",
+        content: [{ type: "text", text: "I'm a helpful assistant." }],
+      },
+    ])
+
+    expect(result).toEqual([
+      {
+        role: "assistant",
+        content: "I'm a helpful assistant.",
+      },
+    ])
+  })
+
+  it("should convert messages with reasoning parts", () => {
+    const result = convertToQwenChatMessages([
+      {
+        role: "assistant",
+        content: [
+          { type: "reasoning", text: "I'm thinking..." },
+          { type: "text", text: "I'm a helpful assistant." },
+        ],
+      },
+    ])
+
+    expect(result).toEqual([
+      {
+        role: "assistant",
+        content: "I'm a helpful assistant.",
+      },
+    ])
+  })
+})
+
 describe("provider-specific metadata merging", () => {
   it("should merge system message metadata", async () => {
     const result = convertToQwenChatMessages([

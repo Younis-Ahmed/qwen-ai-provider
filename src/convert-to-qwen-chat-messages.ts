@@ -122,11 +122,6 @@ export function convertToQwenChatMessages(
               })
               break
             }
-            default: {
-              // This branch should never occur.
-              const _exhaustiveCheck: never = part
-              throw new Error(`Unsupported part: ${_exhaustiveCheck}`)
-            }
           }
         }
 
