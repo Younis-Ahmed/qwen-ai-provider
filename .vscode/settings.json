@@ -47,5 +47,9 @@
     "scss",
     "pcss",
     "postcss"
-  ]
+  ],
+  "cSpell.words": [
+    "Qwen"
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib"
 }
