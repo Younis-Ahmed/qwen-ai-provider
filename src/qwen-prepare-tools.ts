@@ -19,24 +19,24 @@ export function prepareTools({
   }
   structuredOutputs: boolean
 }): {
-    tools:
-      | undefined
-      | Array<{
-        type: "function"
-        function: {
-          name: string
-          description: string | undefined
-          parameters: unknown
-        }
-      }>
-    tool_choice:
-      | { type: "function", function: { name: string } }
-      | "auto"
-      | "none"
-      | "required"
-      | undefined
-    toolWarnings: LanguageModelV1CallWarning[]
-  } {
+  tools:
+    | undefined
+    | Array<{
+      type: "function"
+      function: {
+        name: string
+        description: string | undefined
+        parameters: unknown
+      }
+    }>
+  tool_choice:
+    | { type: "function", function: { name: string } }
+    | "auto"
+    | "none"
+    | "required"
+    | undefined
+  toolWarnings: LanguageModelV1CallWarning[]
+} {
   // Normalize tools array by converting empty array to undefined.
   const tools = mode.tools?.length ? mode.tools : undefined
   const toolWarnings: LanguageModelV1CallWarning[] = []

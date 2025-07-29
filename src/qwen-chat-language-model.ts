@@ -427,9 +427,12 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
           // Send metadata then text deltas.
           controller.enqueue({ type: "response-metadata", ...result.response })
           if (result.reasoning) {
+            const reasoningText = typeof result.reasoning === "string"
+              ? result.reasoning
+              : result.reasoning.map(item => item.type === "text" ? item.text : "").join("")
             controller.enqueue({
               type: "reasoning",
-              textDelta: result.reasoning,
+              textDelta: reasoningText,
             })
           }
           if (result.text) {

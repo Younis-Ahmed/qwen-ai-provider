@@ -34,7 +34,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       
       - name: config npm registry
-        run: pnpm config set registry https://registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}        
+        run: pnpm config set registry https://registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
       - name: Create Release Pull Request or Publish
         id: changesets
         uses: changesets/action@v1

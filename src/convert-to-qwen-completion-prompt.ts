@@ -32,9 +32,9 @@ export function convertToQwenCompletionPrompt({
   user?: string
   assistant?: string
 }): {
-    prompt: string
-    stopSequences?: string[]
-  } {
+  prompt: string
+  stopSequences?: string[]
+} {
   // If input is a straightforward prompt with one user message, return it directly.
   if (
     inputFormat === "prompt"
