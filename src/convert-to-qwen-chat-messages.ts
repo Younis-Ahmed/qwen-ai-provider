@@ -122,6 +122,14 @@ export function convertToQwenChatMessages(
               })
               break
             }
+            case "file": // Add cases in v5
+            case "reasoning":
+            case "redacted-reasoning": {
+              // Ignore or handle these part types as needed
+              throw new UnsupportedFunctionalityError({
+                functionality: `${part.type} content parts in assistant messages`,
+              })
+            }
             default: {
               // This branch should never occur.
               const _exhaustiveCheck: never = part

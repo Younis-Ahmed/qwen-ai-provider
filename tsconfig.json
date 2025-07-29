@@ -5,10 +5,10 @@
     "target": "ES2018",
     "jsx": "react-jsx",
     "lib": ["dom", "ES2021"],
-    "module": "ESNext",
-    "moduleResolution": "node",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"] 
     },
     "types": ["@types/node", "vitest/globals"],
     "strict": true,
