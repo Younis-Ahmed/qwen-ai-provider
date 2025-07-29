@@ -8,11 +8,11 @@ export type QwenChatPrompt = Array<QwenMessage>
 /**
  * Union type for all possible Qwen message types.
  */
-export type QwenMessage =
-  | QwenSystemMessage
-  | QwenUserMessage
-  | QwenAssistantMessage
-  | QwenToolMessage
+export type QwenMessage
+  = | QwenSystemMessage
+    | QwenUserMessage
+    | QwenAssistantMessage
+    | QwenToolMessage
 
 // Helper type for additional properties for metadata extensibility.
 type JsonRecord<T = never> = Record<
@@ -40,9 +40,9 @@ export interface QwenUserMessage
 /**
  * Represents a part of a message content.
  */
-export type QwenContentPart =
-  | QwenContentPartText
-  | QwenContentPartImage
+export type QwenContentPart
+  = | QwenContentPartText
+    | QwenContentPartImage
 
 /**
  * Message part that contains an image URL.
