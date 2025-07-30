@@ -1,11 +1,18 @@
 # qwen-ai-provider
 
+## 0.1.1
+
+### Patch Changes
+
+- 06feb5c: - Fixed the onFinish hook token usage response
+  - Updated the zod response scheme
+  - Handle unsupported content parts in assistant messages
+
 ## 0.1.0
 
 ### Minor Changes
 
 - This release introduces several improvements and new features across the project:
-
   - Added support for chat, completion, and text embedding models with the introduction of `QwenChatLanguageModel`, `QwenCompletionLanguageModel`, and `QwenEmbeddingModel`.
   - Enabled the provider to construct and configure these models dynamically based on request parameters.
   - Integrated provider utilities to manage API key loading.
@@ -31,7 +38,6 @@
 ### Patch Changes
 
 - Initial release of qwen-ai-provider:
-
   - Added QwenChatLanguageModel for chat completions
   - Added QwenCompletionLanguageModel for text completions
   - Added QwenEmbeddingModel for text embeddings
