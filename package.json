@@ -50,11 +50,11 @@
     "ci:version": "changeset version && pnpm install --no-frozen-lockfile"
   },
   "peerDependencies": {
-    "zod": "^3.25.49"
+    "zod": "^3.25.49 || ^4"
   },
   "dependencies": {
-    "@ai-sdk/provider": "^1.0.7",
-    "@ai-sdk/provider-utils": "^2.1.6"
+    "@ai-sdk/provider": "^2.0",
+    "@ai-sdk/provider-utils": "^3.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.1.1",
@@ -73,6 +73,6 @@
     "typescript": "^5.7.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.5",
-    "zod": "^3.24.1"
+    "zod": "^3.25"
   }
 }

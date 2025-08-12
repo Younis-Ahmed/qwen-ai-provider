@@ -2,7 +2,7 @@
 import type { LanguageModelV1Prompt } from "@ai-sdk/provider"
 import {
   convertReadableStreamToArray,
-  JsonTestServer,
+  createTestServer,
   StreamingTestServer,
 } from "@ai-sdk/provider-utils/test"
 import { describe, expect, it } from "vitest"
@@ -23,6 +23,11 @@ const provider = createQwen({
 })
 
 const model = provider.completion("qwen-plus")
+
+const DEFAULT_URL = "https://my.api.com/v1/completions";
+const server = createTestServer({
+  [DEFAULT_URL]: {}
+})
 
 describe("config", () => {
   it("should extract base name from provider string", () => {
@@ -69,10 +74,6 @@ describe("config", () => {
 })
 
 describe("doGenerate", () => {
-  const server = new JsonTestServer("https://my.api.com/v1/completions")
-
-  server.setupTestEnvironment()
-
   function prepareJsonResponse({
     content = "",
     usage = {
@@ -96,19 +97,22 @@ describe("doGenerate", () => {
     created?: number
     model?: string
   }) {
-    server.responseBodyJson = {
-      id,
-      object: "text_completion",
-      created,
-      model,
-      choices: [
-        {
-          text: content,
-          index: 0,
-          finish_reason,
-        },
-      ],
-      usage,
+    server.urls[DEFAULT_URL].response = {
+      type: 'json-value',
+      body: {
+        id,
+        object: "text_completion",
+        created,
+        model,
+        choices: [
+          {
+            text: content,
+            index: 0,
+            finish_reason,
+          },
+        ],
+        usage,
+      }
     }
   }
 
@@ -213,7 +217,7 @@ describe("doGenerate", () => {
   it("should expose the raw response headers", async () => {
     prepareJsonResponse({ content: "" })
 
-    server.responseHeaders = {
+    server.urls[DEFAULT_URL].response.headers = {
       "test-header": "test-value",
     }
 
@@ -242,7 +246,7 @@ describe("doGenerate", () => {
       prompt: TEST_PROMPT,
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       model: "qwen-plus",
       prompt: "Hello",
     })
@@ -268,7 +272,7 @@ describe("doGenerate", () => {
       },
     })
 
-    const requestHeaders = await server.getRequestHeaders()
+    const requestHeaders = await server.calls[0].requestHeaders
 
     expect(requestHeaders).toStrictEqual({
       "authorization": "Bearer test-api-key",
@@ -292,7 +296,7 @@ describe("doGenerate", () => {
       },
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       model: "qwen-plus",
       prompt: "Hello",
     })
@@ -312,7 +316,7 @@ describe("doGenerate", () => {
       },
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       model: "qwen-plus",
       prompt: "Hello",
     })
@@ -320,10 +324,6 @@ describe("doGenerate", () => {
 })
 
 describe("doStream", () => {
-  const server = new StreamingTestServer("https://my.api.com/v1/completions")
-
-  server.setupTestEnvironment()
-
   function prepareStreamResponse({
     content,
     finish_reason = "stop",
@@ -341,21 +341,31 @@ describe("doStream", () => {
     }
     finish_reason?: string
   }) {
-    server.responseChunks = [
-      ...content.map((text) => {
-        return (
-          `data: {"id":"cmpl-96c64EdfhOw8pjFFgVpLuT8k2MtdT","object":"text_completion","created":1711363440,`
-          + `"choices":[{"text":"${text}","index":0,"finish_reason":null}],"model":"qwen-plus"}\n\n`
-        )
-      }),
-      `data: {"id":"cmpl-96c3yLQE1TtZCd6n6OILVmzev8M8H","object":"text_completion","created":1711363310,`
-      + `"choices":[{"text":"","index":0,"finish_reason":"${finish_reason}"}],"model":"qwen-plus"}\n\n`,
-      `data: {"id":"cmpl-96c3yLQE1TtZCd6n6OILVmzev8M8H","object":"text_completion","created":1711363310,`
-      + `"model":"qwen-plus","usage":${JSON.stringify(
-        usage,
-      )},"choices":[]}\n\n`,
-      "data: [DONE]\n\n",
-    ]
+    server.urls[DEFAULT_URL].response = {
+      type: 'stream-chunks',
+      chunks: [
+        ...content.map((text) => {
+          return (
+            `data: {"id":"cmpl-96c64EdfhOw8pjFFgVpLuT8k2MtdT","object":"text_completion","created":1711363440,`
+            + `"choices":[{"text":"${text}","index":0,"finish_reason":null}],"model":"qwen-plus"}\n\n`
+          )
+        }),
+        `data: {"id":"cmpl-96c3yLQE1TtZCd6n6OILVmzev8M8H","object":"text_completion","created":1711363310,`
+        + `"choices":[{"text":"","index":0,"finish_reason":"${finish_reason}"}],"model":"qwen-plus"}\n\n`,
+        `data: {"id":"cmpl-96c3yLQE1TtZCd6n6OILVmzev8M8H","object":"text_completion","created":1711363310,`
+        + `"model":"qwen-plus","usage":${JSON.stringify(
+          usage,
+        )},"choices":[]}\n\n`,
+        "data: [DONE]\n\n",
+      ]
+    }
+  }
+
+  function prepareStreamChunksResponse(chunks: string[]) {
+    server.urls[DEFAULT_URL].response = {
+      type: 'stream-chunks',
+      chunks,
+    };
   }
 
   it("should stream text deltas", async () => {
@@ -396,7 +406,7 @@ describe("doStream", () => {
   })
 
   it("should handle unparsable stream parts", async () => {
-    server.responseChunks = [`data: {unparsable}\n\n`, "data: [DONE]\n\n"]
+    prepareStreamChunksResponse([`data: {unparsable}\n\n`, "data: [DONE]\n\n"])
 
     const { stream } = await model.doStream({
       inputFormat: "prompt",
@@ -436,7 +446,7 @@ describe("doStream", () => {
   it("should expose the raw response headers", async () => {
     prepareStreamResponse({ content: [] })
 
-    server.responseHeaders = {
+    server.urls[DEFAULT_URL].response.headers = {
       "test-header": "test-value",
     }
 
@@ -466,7 +476,7 @@ describe("doStream", () => {
       prompt: TEST_PROMPT,
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       stream: true,
       // stream_options: { include_usage: true },
       model: "qwen-plus",
@@ -494,7 +504,7 @@ describe("doStream", () => {
       },
     })
 
-    const requestHeaders = await server.getRequestHeaders()
+    const requestHeaders = await server.calls[0].requestHeaders
 
     expect(requestHeaders).toStrictEqual({
       "authorization": "Bearer test-api-key",
@@ -518,7 +528,7 @@ describe("doStream", () => {
       prompt: TEST_PROMPT,
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       stream: true,
       model: "qwen-plus",
       prompt: "Hello",
@@ -539,7 +549,7 @@ describe("doStream", () => {
       prompt: TEST_PROMPT,
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       stream: true,
       model: "qwen-plus",
       prompt: "Hello",

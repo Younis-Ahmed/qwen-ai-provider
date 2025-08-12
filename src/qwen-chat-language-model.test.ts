@@ -3,8 +3,7 @@ import type { LanguageModelV1Prompt } from "@ai-sdk/provider"
 import {
   convertReadableStreamToArray,
   describeWithTestServer,
-  JsonTestServer,
-  StreamingTestServer,
+  createTestServer,
 } from "@ai-sdk/provider-utils/test"
 import { describe, expect, it } from "vitest"
 import { QwenChatLanguageModel } from "./qwen-chat-language-model"
@@ -24,6 +23,11 @@ const provider = createQwen({
 })
 
 const model = provider("qwen-chat")
+
+const DEFAULT_URL = "https://my.api.com/v1/chat/completions";
+const server = createTestServer({
+  [DEFAULT_URL]: {}
+})
 
 describe("config", () => {
   it("should extract base name from provider string", () => {
@@ -70,10 +74,6 @@ describe("config", () => {
 })
 
 describe("doGenerate", () => {
-  const server = new JsonTestServer("https://my.api.com/v1/chat/completions")
-
-  server.setupTestEnvironment()
-
   function prepareJsonResponse({
     content = "",
     reasoning_content = "",
@@ -113,26 +113,29 @@ describe("doGenerate", () => {
     id?: string
     model?: string
   } = {}) {
-    server.responseBodyJson = {
-      id,
-      object: "chat.completion",
-      created,
-      model,
-      choices: [
-        {
-          index: 0,
-          message: {
-            role: "assistant",
-            content,
-            reasoning_content,
-            tool_calls,
-            function_call,
+    server.urls[DEFAULT_URL].response = {
+      type: 'json-value',
+      body: {
+        id,
+        object: "chat.completion",
+        created,
+        model,
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: "assistant",
+              content,
+              reasoning_content,
+              tool_calls,
+              function_call,
+            },
+            finish_reason,
           },
-          finish_reason,
-        },
-      ],
-      usage,
-      system_fingerprint: "fp_3bc1b5746c",
+        ],
+        usage,
+        system_fingerprint: "fp_3bc1b5746c",
+      }
     }
   }
 
@@ -146,7 +149,7 @@ describe("doGenerate", () => {
       mode: { type: "regular" },
       prompt: TEST_PROMPT,
     })
-    expect(await server.getRequestBodyJson()).toMatchObject({
+    expect(await server.calls[0].requestBodyJson).toMatchObject({
       user: "test-user-id",
     })
   })
@@ -270,7 +273,7 @@ describe("doGenerate", () => {
   it("should expose the raw response headers", async () => {
     prepareJsonResponse({ content: "" })
 
-    server.responseHeaders = {
+    server.urls[DEFAULT_URL].response.headers = {
       "test-header": "test-value",
     }
 
@@ -299,7 +302,7 @@ describe("doGenerate", () => {
       prompt: TEST_PROMPT,
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       model: "qwen-chat",
       messages: [{ role: "user", content: "Hello" }],
     })
@@ -316,7 +319,7 @@ describe("doGenerate", () => {
       prompt: TEST_PROMPT,
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       model: "qwen-chat",
       messages: [{ role: "user", content: "Hello" }],
       user: "test-user-id",
@@ -337,7 +340,7 @@ describe("doGenerate", () => {
       prompt: TEST_PROMPT,
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       model: "qwen-chat",
       messages: [{ role: "user", content: "Hello" }],
     })
@@ -357,7 +360,7 @@ describe("doGenerate", () => {
       prompt: TEST_PROMPT,
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       model: "qwen-chat",
       messages: [{ role: "user", content: "Hello" }],
     })
@@ -391,7 +394,7 @@ describe("doGenerate", () => {
       prompt: TEST_PROMPT,
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       model: "qwen-chat",
       messages: [{ role: "user", content: "Hello" }],
       tools: [
@@ -436,7 +439,7 @@ describe("doGenerate", () => {
       },
     })
 
-    const requestHeaders = await server.getRequestHeaders()
+    const requestHeaders = await server.calls[0].requestHeaders
 
     expect(requestHeaders).toStrictEqual({
       "authorization": "Bearer test-api-key",
@@ -517,7 +520,7 @@ describe("doGenerate", () => {
         responseFormat: { type: "text" },
       })
 
-      expect(await server.getRequestBodyJson()).toStrictEqual({
+      expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-plus",
         messages: [{ role: "user", content: "Hello" }],
       })
@@ -535,7 +538,7 @@ describe("doGenerate", () => {
         responseFormat: { type: "json" },
       })
 
-      expect(await server.getRequestBodyJson()).toStrictEqual({
+      expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-plus",
         messages: [{ role: "user", content: "Hello" }],
         response_format: { type: "json_object" },
@@ -572,7 +575,7 @@ describe("doGenerate", () => {
         },
       })
 
-      expect(await server.getRequestBodyJson()).toStrictEqual({
+      expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-plus",
         messages: [{ role: "user", content: "Hello" }],
         response_format: { type: "json_object" },
@@ -618,7 +621,7 @@ describe("doGenerate", () => {
         },
       })
 
-      expect(await server.getRequestBodyJson()).toStrictEqual({
+      expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-plus",
         messages: [{ role: "user", content: "Hello" }],
         response_format: {
@@ -668,7 +671,7 @@ describe("doGenerate", () => {
         prompt: TEST_PROMPT,
       })
 
-      expect(await server.getRequestBodyJson()).toStrictEqual({
+      expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-plus",
         messages: [{ role: "user", content: "Hello" }],
         response_format: {
@@ -718,7 +721,7 @@ describe("doGenerate", () => {
         prompt: TEST_PROMPT,
       })
 
-      expect(await server.getRequestBodyJson()).toStrictEqual({
+      expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-plus",
         messages: [{ role: "user", content: "Hello" }],
         response_format: {
@@ -762,7 +765,7 @@ describe("doGenerate", () => {
         prompt: TEST_PROMPT,
       })
 
-      expect(await server.getRequestBodyJson()).toStrictEqual({
+      expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-plus",
         messages: [{ role: "user", content: "Hello" }],
         response_format: {
@@ -816,7 +819,7 @@ describe("doGenerate", () => {
         prompt: TEST_PROMPT,
       })
 
-      expect(await server.getRequestBodyJson()).toStrictEqual({
+      expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-plus",
         messages: [{ role: "user", content: "Hello" }],
         tool_choice: { type: "function", function: { name: "test-tool" } },
@@ -865,12 +868,6 @@ describe("doGenerate", () => {
 })
 
 describe("doStream", () => {
-  const server = new StreamingTestServer(
-    "https://my.api.com/v1/chat/completions",
-  )
-
-  server.setupTestEnvironment()
-
   function prepareStreamResponse({
     content,
     finish_reason = "stop",
@@ -878,23 +875,33 @@ describe("doStream", () => {
     content: string[]
     finish_reason?: string
   }) {
-    server.responseChunks = [
-      `data: {"id":"chatcmpl-e7f8e220-656c-4455-a132-dacfc1370798","object":"chat.completion.chunk","created":1702657020,"model":"qwen-chat",`
-      + `"system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}\n\n`,
-      ...content.map((text) => {
-        return (
-          `data: {"id":"chatcmpl-e7f8e220-656c-4455-a132-dacfc1370798","object":"chat.completion.chunk","created":1702657020,"model":"qwen-chat",`
-          + `"system_fingerprint":null,"choices":[{"index":1,"delta":{"content":"${text}"},"finish_reason":null}]}\n\n`
-        )
-      }),
-      `data: {"id":"chatcmpl-e7f8e220-656c-4455-a132-dacfc1370798","object":"chat.completion.chunk","created":1702657020,"model":"qwen-chat",`
-      + `"system_fingerprint":null,"choices":[{"index":0,"delta":{},"finish_reason":"${finish_reason}"}]}\n\n`,
-      `data: {"id":"chatcmpl-e7f8e220-656c-4455-a132-dacfc1370798","object":"chat.completion.chunk","created":1729171479,"model":"qwen-chat",`
-      + `"system_fingerprint":"fp_10c08bf97d","choices":[{"index":0,"delta":{},"finish_reason":"${finish_reason}"}],`
-      + `"usage":{"queue_time":0.061348671,"prompt_tokens":18,"prompt_time":0.000211569,`
-      + `"completion_tokens":439,"completion_time":0.798181818,"total_tokens":457,"total_time":0.798393387}}\n\n`,
-      "data: [DONE]\n\n",
-    ]
+    server.urls[DEFAULT_URL].response = {
+      type: 'stream-chunks',
+      chunks: [
+        `data: {"id":"chatcmpl-e7f8e220-656c-4455-a132-dacfc1370798","object":"chat.completion.chunk","created":1702657020,"model":"qwen-chat",`
+        + `"system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}\n\n`,
+        ...content.map((text) => {
+          return (
+            `data: {"id":"chatcmpl-e7f8e220-656c-4455-a132-dacfc1370798","object":"chat.completion.chunk","created":1702657020,"model":"qwen-chat",`
+            + `"system_fingerprint":null,"choices":[{"index":1,"delta":{"content":"${text}"},"finish_reason":null}]}\n\n`
+          )
+        }),
+        `data: {"id":"chatcmpl-e7f8e220-656c-4455-a132-dacfc1370798","object":"chat.completion.chunk","created":1702657020,"model":"qwen-chat",`
+        + `"system_fingerprint":null,"choices":[{"index":0,"delta":{},"finish_reason":"${finish_reason}"}]}\n\n`,
+        `data: {"id":"chatcmpl-e7f8e220-656c-4455-a132-dacfc1370798","object":"chat.completion.chunk","created":1729171479,"model":"qwen-chat",`
+        + `"system_fingerprint":"fp_10c08bf97d","choices":[{"index":0,"delta":{},"finish_reason":"${finish_reason}"}],`
+        + `"usage":{"queue_time":0.061348671,"prompt_tokens":18,"prompt_time":0.000211569,`
+        + `"completion_tokens":439,"completion_time":0.798181818,"total_tokens":457,"total_time":0.798393387}}\n\n`,
+        "data: [DONE]\n\n",
+      ],
+    }
+  }
+
+  function prepareStreamChunksResponse(chunks: string[]) {
+    server.urls[DEFAULT_URL].response = {
+      type: 'stream-chunks',
+      chunks,
+    };
   }
 
   it("should stream text deltas", async () => {
@@ -930,7 +937,7 @@ describe("doStream", () => {
   })
 
   it("should stream reasoning content before text deltas", async () => {
-    server.responseChunks = [
+    prepareStreamChunksResponse([
       `data: {"id":"chatcmpl-e7f8e220-656c-4455-a132-dacfc1370798","object":"chat.completion.chunk","created":1711357598,"model":"qwen-chat",`
       + `"system_fingerprint":"fp_3bc1b5746c","choices":[{"index":0,"delta":{"role":"assistant","reasoning_content":"Let me think"},"finish_reason":null}]}\n\n`,
       `data: {"id":"chatcmpl-e7f8e220-656c-4455-a132-dacfc1370798","object":"chat.completion.chunk","created":1711357598,"model":"qwen-chat",`
@@ -943,7 +950,7 @@ describe("doStream", () => {
       + `"system_fingerprint":"fp_10c08bf97d","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],`
       + `"usage":{"prompt_tokens":18,"completion_tokens":439}}\n\n`,
       "data: [DONE]\n\n",
-    ]
+    ])
 
     const { stream } = await model.doStream({
       inputFormat: "prompt",
@@ -983,7 +990,7 @@ describe("doStream", () => {
   })
 
   it("should stream tool deltas", async () => {
-    server.responseChunks = [
+    prepareStreamChunksResponse([
       `data: {"id":"chatcmpl-e7f8e220-656c-4455-a132-dacfc1370798","object":"chat.completion.chunk","created":1711357598,"model":"qwen-chat",`
       + `"system_fingerprint":"fp_3bc1b5746c","choices":[{"index":0,"delta":{"role":"assistant","content":null,`
       + `"tool_calls":[{"index":0,"id":"call_O17Uplv4lJvD6DVdIvFFeRMw","type":"function","function":{"name":"test-tool","arguments":""}}]},`
@@ -1014,7 +1021,7 @@ describe("doStream", () => {
       + `"usage":{"queue_time":0.061348671,"prompt_tokens":18,"prompt_time":0.000211569,`
       + `"completion_tokens":439,"completion_time":0.798181818,"total_tokens":457,"total_time":0.798393387}}\n\n`,
       "data: [DONE]\n\n",
-    ]
+    ])
 
     const { stream } = await model.doStream({
       inputFormat: "prompt",
@@ -1109,7 +1116,7 @@ describe("doStream", () => {
   })
 
   it("should stream tool call deltas when tool call arguments are passed in the first chunk", async () => {
-    server.responseChunks = [
+    prepareStreamChunksResponse([
       `data: {"id":"chatcmpl-e7f8e220-656c-4455-a132-dacfc1370798","object":"chat.completion.chunk","created":1711357598,"model":"qwen-chat",`
       + `"system_fingerprint":"fp_3bc1b5746c","choices":[{"index":0,"delta":{"role":"assistant","content":null,`
       + `"tool_calls":[{"index":0,"id":"call_O17Uplv4lJvD6DVdIvFFeRMw","type":"function","function":{"name":"test-tool","arguments":"{\\""}}]},`
@@ -1140,7 +1147,7 @@ describe("doStream", () => {
       + `"usage":{"queue_time":0.061348671,"prompt_tokens":18,"prompt_time":0.000211569,`
       + `"completion_tokens":439,"completion_time":0.798181818,"total_tokens":457,"total_time":0.798393387}}\n\n`,
       "data: [DONE]\n\n",
-    ]
+    ])
 
     const { stream } = await model.doStream({
       inputFormat: "prompt",
@@ -1242,7 +1249,7 @@ describe("doStream", () => {
   })
 
   it("should not duplicate tool calls when there is an additional empty chunk after the tool call has been completed", async () => {
-    server.responseChunks = [
+    prepareStreamChunksResponse([
       `data: {"id":"chat-2267f7e2910a4254bac0650ba74cfc1c","object":"chat.completion.chunk","created":1733162241,`
       + `"model":"meta/llama-3.1-8b-instruct:fp8","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}],`
       + `"usage":{"prompt_tokens":226,"total_tokens":226,"completion_tokens":0}}\n\n`,
@@ -1279,7 +1286,7 @@ describe("doStream", () => {
       + `"model":"meta/llama-3.1-8b-instruct:fp8","choices":[],`
       + `"usage":{"prompt_tokens":226,"total_tokens":246,"completion_tokens":20}}\n\n`,
       `data: [DONE]\n\n`,
-    ]
+    ])
 
     const { stream } = await model.doStream({
       inputFormat: "prompt",
@@ -1364,7 +1371,7 @@ describe("doStream", () => {
   })
 
   it("should stream tool call that is sent in one chunk", async () => {
-    server.responseChunks = [
+    prepareStreamChunksResponse([
       `data: {"id":"chatcmpl-e7f8e220-656c-4455-a132-dacfc1370798","object":"chat.completion.chunk","created":1711357598,"model":"qwen-chat",`
       + `"system_fingerprint":"fp_3bc1b5746c","choices":[{"index":0,"delta":{"role":"assistant","content":null,`
       + `"tool_calls":[{"index":0,"id":"call_O17Uplv4lJvD6DVdIvFFeRMw","type":"function","function":{"name":"test-tool","arguments":"{\\"value\\":\\"Sparkle Day\\"}"}}]},`
@@ -1374,7 +1381,7 @@ describe("doStream", () => {
       + `"usage":{"queue_time":0.061348671,"prompt_tokens":18,"prompt_time":0.000211569,`
       + `"completion_tokens":439,"completion_time":0.798181818,"total_tokens":457,"total_time":0.798393387}}\n\n`,
       "data: [DONE]\n\n",
-    ]
+    ])
 
     const { stream } = await model.doStream({
       inputFormat: "prompt",
@@ -1427,7 +1434,7 @@ describe("doStream", () => {
   })
 
   it("should handle unparsable stream parts", async () => {
-    server.responseChunks = [`data: {unparsable}\n\n`, "data: [DONE]\n\n"]
+    prepareStreamChunksResponse([`data: {unparsable}\n\n`, "data: [DONE]\n\n"])
 
     const { stream } = await model.doStream({
       inputFormat: "prompt",
@@ -1452,7 +1459,7 @@ describe("doStream", () => {
   it("should expose the raw response headers", async () => {
     prepareStreamResponse({ content: [] })
 
-    server.responseHeaders = {
+    server.urls[DEFAULT_URL].response.headers = {
       "test-header": "test-value",
     }
 
@@ -1482,7 +1489,7 @@ describe("doStream", () => {
       prompt: TEST_PROMPT,
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       stream: true,
       stream_options: {
         include_usage: true,
@@ -1512,7 +1519,7 @@ describe("doStream", () => {
       },
     })
 
-    const requestHeaders = await server.getRequestHeaders()
+    const requestHeaders = await server.calls[0].requestHeaders
 
     expect(requestHeaders).toStrictEqual({
       "authorization": "Bearer test-api-key",
@@ -1536,7 +1543,7 @@ describe("doStream", () => {
       prompt: TEST_PROMPT,
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       stream: true,
       stream_options: {
         include_usage: true,
@@ -1560,7 +1567,7 @@ describe("doStream", () => {
       prompt: TEST_PROMPT,
     })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
       stream: true,
       stream_options: {
         include_usage: true,
@@ -1586,10 +1593,6 @@ describe("doStream", () => {
 })
 
 describe("doStream simulated streaming", () => {
-  const server = new JsonTestServer("https://my.api.com/v1/chat/completions")
-
-  server.setupTestEnvironment()
-
   function prepareJsonResponse({
     content = "",
     reasoning_content = "",
@@ -1624,26 +1627,29 @@ describe("doStream simulated streaming", () => {
     id?: string
     model?: string
   } = {}) {
-    server.responseBodyJson = {
-      id,
-      object: "chat.completion",
-      created,
-      model,
-      choices: [
-        {
-          index: 0,
-          message: {
-            role: "assistant",
-            content,
-            tool_calls,
-            reasoning_content,
+    server.urls[DEFAULT_URL].response = {
+      type: 'json-value',
+      body: {
+        id,
+        object: "chat.completion",
+        created,
+        model,
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: "assistant",
+              content,
+              tool_calls,
+              reasoning_content,
+            },
+            finish_reason,
           },
-          finish_reason,
-        },
-      ],
-      usage,
-      system_fingerprint: "fp_3bc1b5746c",
-    }
+        ],
+        usage,
+        system_fingerprint: "fp_3bc1b5746c",
+      }
+    };
   }
 
   it("should stream text delta", async () => {
@@ -1829,115 +1835,116 @@ describe("metadata extraction", () => {
   }
 
   describe("non-streaming", () => {
-    describeWithTestServer(
-      "metadata extraction",
-      {
-        url: "https://my.api.com/v1/chat/completions",
-        type: "json-value",
-        content: {
-          id: "chatcmpl-123",
-          object: "chat.completion",
-          created: 1711115037,
-          model: "qwen-plus",
-          choices: [
-            {
-              index: 0,
-              message: {
-                role: "assistant",
-                content: "Hello",
-              },
-              finish_reason: "stop",
-            },
-          ],
-          test_field: "test_value",
-        },
-      },
-      ({ call }) => {
-        it("should process metadata from complete response", async () => {
-          const model = new QwenChatLanguageModel(
-            "qwen-plus",
-            {},
-            {
-              provider: "test-provider",
-              url: () => "https://my.api.com/v1/chat/completions",
-              headers: () => ({}),
-              metadataExtractor: testMetadataExtractor,
-            },
-          )
-
-          const result = await model.doGenerate({
-            inputFormat: "prompt",
-            mode: { type: "regular" },
-            prompt: TEST_PROMPT,
-          })
-
-          expect(result.providerMetadata).toEqual({
-            test: {
-              value: "test_value",
-            },
-          })
-
-          const requestBody = await call(0).getRequestBodyJson()
-          expect(requestBody).toStrictEqual({
+    describe("metadata extraction", () => {
+      beforeEach(() => {
+        server.urls[DEFAULT_URL].response = {
+          url: "https://my.api.com/v1/chat/completions",
+          type: "json-value",
+          body: {
+            id: "chatcmpl-123",
+            object: "chat.completion",
+            created: 1711115037,
             model: "qwen-plus",
-            messages: [{ role: "user", content: "Hello" }],
-          })
+            choices: [
+              {
+                index: 0,
+                message: {
+                  role: "assistant",
+                  content: "Hello",
+                },
+                finish_reason: "stop",
+              },
+            ],
+            test_field: "test_value",
+          },
+        }
+      })
+
+      it("should process metadata from complete response", async () => {
+        const model = new QwenChatLanguageModel(
+          "qwen-plus",
+          {},
+          {
+            provider: "test-provider",
+            url: () => "https://my.api.com/v1/chat/completions",
+            headers: () => ({}),
+            metadataExtractor: testMetadataExtractor,
+          },
+        )
+
+        const result = await model.doGenerate({
+          inputFormat: "prompt",
+          mode: { type: "regular" },
+          prompt: TEST_PROMPT,
         })
+
+        expect(result.providerMetadata).toEqual({
+          test: {
+            value: "test_value",
+          },
+        })
+
+        const requestBody = await server.calls[0].requestBodyJson
+        expect(requestBody).toStrictEqual({
+          model: "qwen-plus",
+          messages: [{ role: "user", content: "Hello" }],
+        })
+      })
       },
     )
   })
 
   describe("streaming", () => {
-    describeWithTestServer(
-      "metadata streaming",
-      {
-        url: "https://my.api.com/v1/chat/completions",
-        type: "stream-values",
-        content: [
-          "data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n",
-          "data: {\"choices\":[{\"finish_reason\":\"stop\"}],\"test_field\":\"test_value\"}\n\n",
-          "data: [DONE]\n\n",
-        ],
-      },
-      ({ call }) => {
-        it("should process metadata from streaming response", async () => {
-          const model = new QwenChatLanguageModel(
-            "qwen-plus",
-            {},
-            {
-              provider: "test-provider",
-              url: () => "https://my.api.com/v1/chat/completions",
-              headers: () => ({}),
-              metadataExtractor: testMetadataExtractor,
-            },
-          )
+    describe("metadata streaming", () => {
+      beforeEach(() => {
+        server.urls[DEFAULT_URL].response = {
+          url: "https://my.api.com/v1/chat/completions",
+          type: "stream-chunks",
+          chunks: [
+            "data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n",
+            "data: {\"choices\":[{\"finish_reason\":\"stop\"}],\"test_field\":\"test_value\"}\n\n",
+            "data: [DONE]\n\n",
+          ],
+        }
+      })
 
-          const result = await model.doStream({
-            inputFormat: "prompt",
-            mode: { type: "regular" },
-            prompt: TEST_PROMPT,
-          })
+      it("should process metadata from streaming response", async () => {
+        const model = new QwenChatLanguageModel(
+          "qwen-plus",
+          {},
+          {
+            provider: "test-provider",
+            url: () => "https://my.api.com/v1/chat/completions",
+            headers: () => ({}),
+            metadataExtractor: testMetadataExtractor,
+          },
+        )
 
-          const parts = await convertReadableStreamToArray(result.stream)
-          const finishPart = parts.find(part => part.type === "finish")
-
-          expect(finishPart?.providerMetadata).toEqual({
-            test: {
-              value: "test_value",
-            },
-          })
-
-          const requestBody = await call(0).getRequestBodyJson()
-          expect(requestBody).toStrictEqual({
-            model: "qwen-plus",
-            messages: [{ role: "user", content: "Hello" }],
-            stream: true,
-            stream_options: {
-              include_usage: true,
-            },
-          })
+        const result = await model.doStream({
+          inputFormat: "prompt",
+          mode: { type: "regular" },
+          prompt: TEST_PROMPT,
         })
-      },
-    )
+
+        const parts = await convertReadableStreamToArray(result.stream)
+        const finishPart = parts.find(part => part.type === "finish")
+
+        expect(finishPart?.providerMetadata).toEqual({
+          test: {
+            value: "test_value",
+          },
+        })
+
+        const requestBody = await server.calls[0].requestBodyJson
+        expect(requestBody).toStrictEqual({
+          model: "qwen-plus",
+          messages: [{ role: "user", content: "Hello" }],
+          stream: true,
+          stream_options: {
+            include_usage: true,
+          },
+        })
+      })
+    })
   })
 })

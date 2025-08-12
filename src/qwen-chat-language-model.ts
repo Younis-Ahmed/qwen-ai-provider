@@ -31,7 +31,7 @@ import {
   isParsableJson,
   postJsonToApi,
 } from "@ai-sdk/provider-utils"
-import { z } from "zod"
+import { z } from "zod/v3"
 import { convertToQwenChatMessages } from "./convert-to-qwen-chat-messages"
 import { getResponseMetadata } from "./get-response-metadata"
 import { mapQwenFinishReason } from "./map-qwen-finish-reason"

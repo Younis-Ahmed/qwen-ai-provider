@@ -1,6 +1,6 @@
-import type { ZodSchema } from "zod"
+import type { ZodSchema } from "zod/v3"
 import { createJsonErrorResponseHandler } from "@ai-sdk/provider-utils"
-import { z } from "zod"
+import { z } from "zod/v3"
 
 /**
  * Schema defining the structure of a Qwen error response.

@@ -27,7 +27,7 @@ import {
   createJsonResponseHandler,
   postJsonToApi,
 } from "@ai-sdk/provider-utils"
-import { z } from "zod"
+import { z } from "zod/v3"
 import { convertToQwenCompletionPrompt } from "./convert-to-qwen-completion-prompt"
 import { getResponseMetadata } from "./get-response-metadata"
 import { mapQwenFinishReason } from "./map-qwen-finish-reason"
