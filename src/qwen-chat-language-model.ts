@@ -1,27 +1,21 @@
 import type {
   APICallError,
-  LanguageModelV1,
-  LanguageModelV1CallWarning,
-  LanguageModelV1FinishReason,
-  LanguageModelV1ObjectGenerationMode,
-  LanguageModelV1StreamPart,
+  LanguageModelV2,
+  LanguageModelV2CallOptions,
+  LanguageModelV2CallWarning,
+  LanguageModelV2Content,
+  LanguageModelV2FinishReason,
+  LanguageModelV2StreamPart,
 } from "@ai-sdk/provider"
 import type {
   FetchFunction,
   ParseResult,
   ResponseHandler,
 } from "@ai-sdk/provider-utils"
-import type {
-  QwenChatModelId,
-  QwenChatSettings,
-} from "./qwen-chat-settings"
-import type {
-  QwenErrorStructure,
-} from "./qwen-error"
+import type { QwenChatModelId, QwenChatSettings } from "./qwen-chat-settings"
+import type { QwenErrorStructure } from "./qwen-error"
 import type { MetadataExtractor } from "./qwen-metadata-extractor"
-import {
-  InvalidResponseDataError,
-} from "@ai-sdk/provider"
+import { InvalidResponseDataError } from "@ai-sdk/provider"
 import {
   combineHeaders,
   createEventSourceResponseHandler,
@@ -35,10 +29,7 @@ import { z } from "zod"
 import { convertToQwenChatMessages } from "./convert-to-qwen-chat-messages"
 import { getResponseMetadata } from "./get-response-metadata"
 import { mapQwenFinishReason } from "./map-qwen-finish-reason"
-import {
-  defaultQwenErrorStructure,
-} from "./qwen-error"
-import { prepareTools } from "./qwen-prepare-tools"
+import { defaultQwenErrorStructure } from "./qwen-error"
 
 /**
  * Configuration for the Qwen Chat Language Model.
@@ -51,13 +42,6 @@ export interface QwenChatConfig {
   fetch?: FetchFunction
   errorStructure?: QwenErrorStructure<any>
   metadataExtractor?: MetadataExtractor
-
-  /**
-  Default object generation mode that should be used with this model when
-  no mode is specified. Should be the mode with the best results for this
-  model. `undefined` can be specified if object generation is not supported.
-   */
-  defaultObjectGenerationMode?: LanguageModelV1ObjectGenerationMode
 
   /**
    * Whether the model supports structured outputs.
@@ -102,31 +86,25 @@ const QwenChatResponseSchema = z.object({
 })
 
 /**
- * Class representing the Qwen Chat language model.
- * Implements LanguageModelV1 providing text generation and streaming.
- */
-/**
- * A language model implementation for Qwen Chat API that follows the LanguageModelV1 interface.
+ * A language model implementation for Qwen Chat API that follows the LanguageModelV2 interface.
  * Handles both regular text generation and structured outputs through various modes.
  *
- * @param options.mode - The generation mode configuration that determines how the model generates responses:
- *                      'regular' for standard chat completion,
- *                      'object-json' for JSON-structured outputs,
- *                      'object-tool' for function-calling outputs
  * @param options.prompt - The input prompt messages to send to the model
- * @param options.maxTokens - Maximum number of tokens to generate in the response
+ * @param options.maxOutputTokens - Maximum number of tokens to generate in the response
  * @param options.temperature - Controls randomness in the model's output (0-2)
  * @param options.topP - Nucleus sampling parameter that controls diversity (0-1)
  * @param options.topK - Not supported by Qwen - will generate a warning if used
  * @param options.frequencyPenalty - Penalizes frequent tokens (-2 to 2)
  * @param options.presencePenalty - Penalizes repeated tokens (-2 to 2)
- * @param options.providerMetadata - Additional provider-specific metadata to include in the request
+ * @param options.providerOptions - Additional provider-specific options to include in the request
  * @param options.stopSequences - Array of sequences where the model should stop generating
  * @param options.responseFormat - Specifies the desired format of the response (e.g. JSON)
  * @param options.seed - Random seed for deterministic generation
  */
-export class QwenChatLanguageModel implements LanguageModelV1 {
-  readonly specificationVersion = "v1"
+export class QwenChatLanguageModel implements LanguageModelV2 {
+  readonly specificationVersion = "v2"
+
+  readonly supportedUrls: Record<string, RegExp[]> = {}
 
   readonly supportsStructuredOutputs: boolean
 
@@ -153,21 +131,11 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
     this.config = config
 
     // Initialize error handling using provided or default error structure.
-    const errorStructure
-        = config.errorStructure ?? defaultQwenErrorStructure
-    this.chunkSchema = createQwenChatChunkSchema(
-      errorStructure.errorSchema,
-    )
+    const errorStructure = config.errorStructure ?? defaultQwenErrorStructure
+    this.chunkSchema = createQwenChatChunkSchema(errorStructure.errorSchema)
     this.failedResponseHandler = createJsonErrorResponseHandler(errorStructure)
 
     this.supportsStructuredOutputs = config.supportsStructuredOutputs ?? false
-  }
-
-  /**
-   * Getter for the default object generation mode.
-   */
-  get defaultObjectGenerationMode(): "json" | "tool" | undefined {
-    return this.config.defaultObjectGenerationMode
   }
 
   /**
@@ -186,47 +154,40 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
   }
 
   /**
-   * Generates the arguments and warnings required for a language model generation call.
+   * Generates the arguments and warnings required for a language model generation call (V2).
    *
-   * This function prepares the argument object based on the provided generation options and mode,
-   * including any necessary warnings for unsupported settings. It handles different generation modes
-   * such as regular, object-json, and object-tool.
-   *
-   * @param options.mode - The generation mode configuration containing the type and additional settings.
-   * @param options.prompt - The prompt input used to generate chat messages.
-   * @param options.maxTokens - The maximum number of tokens to generate.
-   * @param options.temperature - The temperature setting to control randomness in generation.
-   * @param options.topP - The nucleus sampling parameter (top-p) for token selection.
-   * @param options.topK - The top-k sampling parameter; if provided, it triggers a warning as it is unsupported.
-   * @param options.frequencyPenalty - The penalty applied to frequently occurring tokens.
-   * @param options.presencePenalty - The penalty applied based on the presence of tokens.
-   * @param options.providerMetadata - Additional metadata customized for the specific provider.
-   * @param options.stopSequences - An array of sequences that will signal the generation to stop.
-   * @param options.responseFormat - The desired response format; supports JSON schema formatting when structured outputs are enabled.
-   * @param options.seed - An optional seed value for randomization.
-   *
-   * @returns An object containing:
-   * - args: The arguments constructed for the language model generation request.
-   * - warnings: A list of warnings related to unsupported or deprecated settings.
+   * @param options - V2 call options
+   * @param options.prompt - The prompt messages for the model
+   * @param options.maxOutputTokens - Maximum number of tokens to generate
+   * @param options.temperature - Sampling temperature
+   * @param options.topP - Top-p sampling parameter
+   * @param options.topK - Top-k sampling parameter
+   * @param options.frequencyPenalty - Frequency penalty parameter
+   * @param options.presencePenalty - Presence penalty parameter
+   * @param options.providerOptions - Provider-specific options
+   * @param options.stopSequences - Sequences where the model will stop generating
+   * @param options.responseFormat - Expected format of the response
+   * @param options.seed - Random seed for reproducibility
+   * @param options.tools - Available tools for the model to use
+   * @param options.toolChoice - Tool choice configuration
+   * @returns An object containing the arguments and warnings
    */
   private getArgs({
-    mode,
-      prompt,
-      maxTokens,
-      temperature,
-      topP,
-      topK,
-      frequencyPenalty,
-      presencePenalty,
-      providerMetadata,
-      stopSequences,
-      responseFormat,
-      seed,
-  }: Parameters<LanguageModelV1["doGenerate"]>[0]) {
-    // Determine the type of generation mode.
-    const type = mode.type
-
-    const warnings: LanguageModelV1CallWarning[] = []
+    prompt,
+    maxOutputTokens,
+    temperature,
+    topP,
+    topK,
+    frequencyPenalty,
+    presencePenalty,
+    providerOptions,
+    stopSequences,
+    responseFormat,
+    seed,
+    tools,
+    toolChoice,
+  }: LanguageModelV2CallOptions) {
+    const warnings: LanguageModelV2CallWarning[] = []
 
     // Warn if unsupported settings are used:
     if (topK != null) {
@@ -245,11 +206,53 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
         type: "unsupported-setting",
         setting: "responseFormat",
         details:
-            "JSON response format schema is only supported with structuredOutputs",
+          "JSON response format schema is only supported with structuredOutputs",
       })
     }
 
-    const baseArgs = {
+    // Convert V2 tools to OpenAI format
+    const openaiTools = tools
+      ?.map((tool) => {
+        if (tool.type === "function") {
+          return {
+            type: "function" as const,
+            function: {
+              name: tool.name,
+              description: tool.description,
+              parameters: tool.inputSchema,
+            },
+          }
+        }
+        // Provider-defined tools not supported yet
+        warnings.push({
+          type: "unsupported-tool",
+          tool,
+        })
+        return null
+      })
+      .filter((t): t is NonNullable<typeof t> => t !== null)
+
+    // Convert V2 tool choice to OpenAI format
+    let openaiToolChoice: any
+    if (toolChoice) {
+      if (toolChoice.type === "auto") {
+        openaiToolChoice = "auto"
+      }
+      else if (toolChoice.type === "none") {
+        openaiToolChoice = "none"
+      }
+      else if (toolChoice.type === "required") {
+        openaiToolChoice = "required"
+      }
+      else if (toolChoice.type === "tool") {
+        openaiToolChoice = {
+          type: "function",
+          function: { name: toolChoice.toolName },
+        }
+      }
+    }
+
+    const args = {
       // model id:
       model: this.modelId,
 
@@ -257,107 +260,50 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
       user: this.settings.user,
 
       // standardized settings:
-      max_tokens: maxTokens,
+      max_tokens: maxOutputTokens,
       temperature,
       top_p: topP,
       frequency_penalty: frequencyPenalty,
       presence_penalty: presencePenalty,
       response_format:
-          responseFormat?.type === "json"
-            ? this.supportsStructuredOutputs === true
-            && responseFormat.schema != null
-              ? {
-                  type: "json_schema",
-                  json_schema: {
-                    schema: responseFormat.schema,
-                    name: responseFormat.name ?? "response",
-                    description: responseFormat.description,
-                  },
-                }
-              : { type: "json_object" }
-            : undefined,
+        responseFormat?.type === "json"
+          ? this.supportsStructuredOutputs === true
+          && responseFormat.schema != null
+            ? {
+                type: "json_schema",
+                json_schema: {
+                  schema: responseFormat.schema,
+                  name: responseFormat.name ?? "response",
+                  description: responseFormat.description,
+                },
+              }
+            : { type: "json_object" }
+          : undefined,
 
       stop: stopSequences,
       seed,
-      ...providerMetadata?.[this.providerOptionsName],
+      ...providerOptions?.[this.providerOptionsName],
 
       // messages:
       messages: convertToQwenChatMessages(prompt),
+
+      // tools:
+      tools: openaiTools && openaiTools.length > 0 ? openaiTools : undefined,
+      tool_choice: openaiToolChoice,
     }
 
-    // Handling various generation modes.
-    switch (type) {
-      case "regular": {
-        const { tools, tool_choice, toolWarnings } = prepareTools({
-          mode,
-          structuredOutputs: this.supportsStructuredOutputs,
-        })
-
-        return {
-          args: { ...baseArgs, tools, tool_choice },
-          warnings: [...warnings, ...toolWarnings],
-        }
-      }
-
-      case "object-json": {
-        return {
-          args: {
-            ...baseArgs,
-            response_format:
-                this.supportsStructuredOutputs === true && mode.schema != null
-                  ? {
-                      type: "json_schema",
-                      json_schema: {
-                        schema: mode.schema,
-                        name: mode.name ?? "response",
-                        description: mode.description,
-                      },
-                    }
-                  : { type: "json_object" },
-          },
-          warnings,
-        }
-      }
-
-      case "object-tool": {
-        return {
-          args: {
-            ...baseArgs,
-            tool_choice: {
-              type: "function",
-              function: { name: mode.tool.name },
-            },
-            tools: [
-              {
-                type: "function",
-                function: {
-                  name: mode.tool.name,
-                  description: mode.tool.description,
-                  parameters: mode.tool.parameters,
-                },
-              },
-            ],
-          },
-          warnings,
-        }
-      }
-
-      default: {
-        const _exhaustiveCheck: never = type
-        throw new Error(`Unsupported type: ${_exhaustiveCheck}`)
-      }
-    }
+    return { args, warnings }
   }
 
   /**
-   * Generates a text response from the model.
+   * Generates a text response from the model (V2).
    * @param options - Generation options.
    * @returns A promise resolving with the generation result.
    */
   async doGenerate(
-    options: Parameters<LanguageModelV1["doGenerate"]>[0],
-  ): Promise<Awaited<ReturnType<LanguageModelV1["doGenerate"]>>> {
-    const { args, warnings } = this.getArgs({ ...options })
+    options: LanguageModelV2CallOptions,
+  ): Promise<Awaited<ReturnType<LanguageModelV2["doGenerate"]>>> {
+    const { args, warnings } = this.getArgs(options)
 
     const body = JSON.stringify(args)
 
@@ -381,79 +327,124 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
       fetch: this.config.fetch,
     })
 
-    const { messages: rawPrompt, ...rawSettings } = args
     const choice = responseBody.choices[0]
     const providerMetadata = this.config.metadataExtractor?.extractMetadata?.({
       parsedBody,
     })
 
-    // Return structured generation details.
+    // Build V2 content array
+    const content: LanguageModelV2Content[] = []
+
+    // Add reasoning content if present
+    if (choice.message.reasoning_content) {
+      content.push({
+        type: "reasoning",
+        text: choice.message.reasoning_content,
+      })
+    }
+
+    // Add text content if present
+    if (choice.message.content) {
+      content.push({
+        type: "text",
+        text: choice.message.content,
+      })
+    }
+
+    // Add tool calls if present
+    if (choice.message.tool_calls) {
+      for (const toolCall of choice.message.tool_calls) {
+        content.push({
+          type: "tool-call",
+          toolCallId: toolCall.id ?? generateId(),
+          toolName: toolCall.function.name,
+          input: toolCall.function.arguments!,
+        })
+      }
+    }
+
+    // Return V2 structured generation details
     return {
-      text: choice.message.content ?? undefined,
-      reasoning: choice.message.reasoning_content ?? undefined,
-      toolCalls: choice.message.tool_calls?.map(toolCall => ({
-        toolCallType: "function",
-        toolCallId: toolCall.id ?? generateId(),
-        toolName: toolCall.function.name,
-        args: toolCall.function.arguments!,
-      })),
+      content,
       finishReason: mapQwenFinishReason(choice.finish_reason),
       usage: {
-        promptTokens: responseBody.usage?.prompt_tokens ?? Number.NaN,
-        completionTokens: responseBody.usage?.completion_tokens ?? Number.NaN,
+        inputTokens: responseBody.usage?.prompt_tokens ?? undefined,
+        outputTokens: responseBody.usage?.completion_tokens ?? undefined,
+        totalTokens:
+          (responseBody.usage?.prompt_tokens ?? 0)
+          + (responseBody.usage?.completion_tokens ?? 0) || undefined,
       },
       ...(providerMetadata && { providerMetadata }),
-      rawCall: { rawPrompt, rawSettings },
-      rawResponse: { headers: responseHeaders },
-      response: getResponseMetadata(responseBody),
-      warnings,
       request: { body },
+      response: {
+        ...getResponseMetadata(responseBody),
+        headers: responseHeaders,
+        body: parsedBody,
+      },
+      warnings,
     }
   }
 
   /**
-   * Returns a stream of model responses.
+   * Returns a stream of model responses (V2).
    * @param options - Stream generation options.
    * @returns A promise resolving with the stream and additional metadata.
    */
   async doStream(
-    options: Parameters<LanguageModelV1["doStream"]>[0],
-  ): Promise<Awaited<ReturnType<LanguageModelV1["doStream"]>>> {
+    options: LanguageModelV2CallOptions,
+  ): Promise<Awaited<ReturnType<LanguageModelV2["doStream"]>>> {
     if (this.settings.simulateStreaming) {
       // Simulate streaming by generating a full response and splitting it.
       const result = await this.doGenerate(options)
-      const simulatedStream = new ReadableStream<LanguageModelV1StreamPart>({
+      const simulatedStream = new ReadableStream<LanguageModelV2StreamPart>({
         start(controller) {
-          // Send metadata then text deltas.
-          controller.enqueue({ type: "response-metadata", ...result.response })
-          if (result.reasoning) {
-            const reasoningText = typeof result.reasoning === "string"
-              ? result.reasoning
-              : result.reasoning.map(item => item.type === "text" ? item.text : "").join("")
+          controller.enqueue({
+            type: "stream-start",
+            warnings: result.warnings,
+          })
+
+          // Send metadata
+          if (result.response) {
             controller.enqueue({
-              type: "reasoning",
-              textDelta: reasoningText,
+              type: "response-metadata",
+              id: result.response.id,
+              timestamp: result.response.timestamp,
+              modelId: result.response.modelId,
             })
           }
-          if (result.text) {
-            controller.enqueue({
-              type: "text-delta",
-              textDelta: result.text,
-            })
-          }
-          if (result.toolCalls) {
-            for (const toolCall of result.toolCalls) {
+
+          // Stream content parts
+          for (const part of result.content) {
+            if (part.type === "reasoning") {
+              const id = generateId()
+              controller.enqueue({ type: "reasoning-start", id })
+              controller.enqueue({
+                type: "reasoning-delta",
+                id,
+                delta: part.text,
+              })
+              controller.enqueue({ type: "reasoning-end", id })
+            }
+            else if (part.type === "text") {
+              const id = generateId()
+              controller.enqueue({ type: "text-start", id })
+              controller.enqueue({ type: "text-delta", id, delta: part.text })
+              controller.enqueue({ type: "text-end", id })
+            }
+            else if (part.type === "tool-call") {
               controller.enqueue({
                 type: "tool-call",
-                ...toolCall,
+                toolCallId: part.toolCallId,
+                toolName: part.toolName,
+                input: part.input,
               })
             }
           }
+
           controller.enqueue({
             type: "finish",
             finishReason: result.finishReason,
             usage: result.usage,
-            logprobs: result.logprobs,
             providerMetadata: result.providerMetadata,
           })
           controller.close()
@@ -461,13 +452,14 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
       })
       return {
         stream: simulatedStream,
-        rawCall: result.rawCall,
-        rawResponse: result.rawResponse,
-        warnings: result.warnings,
+        request: result.request,
+        response: result.response
+          ? { headers: result.response.headers }
+          : undefined,
       }
     }
 
-    const { args, warnings } = this.getArgs({ ...options })
+    const { args, warnings } = this.getArgs(options)
 
     const requestBody = {
       ...args,
@@ -477,10 +469,9 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
       },
     }
 
-    // Set stream flag to true for the API.
     const body = JSON.stringify(requestBody)
     const metadataExtractor
-        = this.config.metadataExtractor?.createStreamExtractor()
+      = this.config.metadataExtractor?.createStreamExtractor()
 
     const { responseHeaders, value: response } = await postJsonToApi({
       url: this.config.url({
@@ -497,39 +488,36 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
       fetch: this.config.fetch,
     })
 
-    const { messages: rawPrompt, ...rawSettings } = args
-
     const toolCalls: Array<{
       id: string
-      type: "function"
-      function: {
-        name: string
-        arguments: string
-      }
+      name: string
+      arguments: string
       hasFinished: boolean
     }> = []
 
-    let finishReason: LanguageModelV1FinishReason = "unknown"
+    let finishReason: LanguageModelV2FinishReason = "unknown"
     let usage: {
-      promptTokens: number | undefined
-      completionTokens: number | undefined
+      inputTokens: number | undefined
+      outputTokens: number | undefined
+      totalTokens: number | undefined
     } = {
-      promptTokens: undefined,
-      completionTokens: undefined,
+      inputTokens: undefined,
+      outputTokens: undefined,
+      totalTokens: undefined,
     }
     let isFirstChunk = true
+    let hasStreamStarted = false
+    let textId: string | undefined
+    let reasoningId: string | undefined
 
     return {
       stream: response.pipeThrough(
         new TransformStream<
           ParseResult<z.infer<typeof this.chunkSchema>>,
-          LanguageModelV1StreamPart
+          LanguageModelV2StreamPart
         >({
-          // Transforms incoming chunks and maps them to stream parts.
           transform(chunk, controller) {
-            // If validation fails, emit an error.
             if (!chunk.success) {
-              finishReason = "error"
               controller.enqueue({ type: "error", error: chunk.error })
               return
             }
@@ -537,35 +525,45 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
 
             metadataExtractor?.processChunk(chunk.rawValue)
 
-            // If API sends an error field in the value.
-            if ("error" in value) {
-              finishReason = "error"
-              controller.enqueue({ type: "error", error: value.error.message })
+            // Handle provider error objects streamed as chunks
+            if ((value as any)?.object === "error") {
+              controller.enqueue({ type: "error", error: (value as any).message })
               return
+            }
+
+            if (!hasStreamStarted) {
+              hasStreamStarted = true
+              controller.enqueue({
+                type: "stream-start",
+                warnings,
+              })
             }
 
             if (isFirstChunk) {
               isFirstChunk = false
-
+              const metadata = getResponseMetadata(value)
               controller.enqueue({
                 type: "response-metadata",
-                ...getResponseMetadata(value),
+                id: metadata.id,
+                timestamp: metadata.timestamp,
+                modelId: metadata.modelId,
               })
             }
 
             if (value.usage != null) {
               usage = {
-                promptTokens: value.usage.prompt_tokens ?? undefined,
-                completionTokens: value.usage.completion_tokens ?? undefined,
+                inputTokens: value.usage.prompt_tokens,
+                outputTokens: value.usage.completion_tokens,
+                totalTokens:
+                  (value.usage.prompt_tokens ?? 0)
+                  + (value.usage.completion_tokens ?? 0) || undefined,
               }
             }
 
             const choice = value.choices[0]
 
             if (choice?.finish_reason != null) {
-              finishReason = mapQwenFinishReason(
-                choice.finish_reason,
-              )
+              finishReason = mapQwenFinishReason(choice.finish_reason)
             }
 
             if (choice?.delta == null) {
@@ -574,22 +572,36 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
 
             const delta = choice.delta
 
-            // Emit reasoning before the main content.
+            // Handle reasoning content
             if (delta.reasoning_content != null) {
+              if (!reasoningId) {
+                reasoningId = generateId()
+                controller.enqueue({
+                  type: "reasoning-start",
+                  id: reasoningId,
+                })
+              }
               controller.enqueue({
-                type: "reasoning",
-                textDelta: delta.reasoning_content,
+                type: "reasoning-delta",
+                id: reasoningId,
+                delta: delta.reasoning_content,
               })
             }
 
+            // Handle text content
             if (delta.content != null) {
+              if (!textId) {
+                textId = generateId()
+                controller.enqueue({ type: "text-start", id: textId })
+              }
               controller.enqueue({
                 type: "text-delta",
-                textDelta: delta.content,
+                id: textId,
+                delta: delta.content,
               })
             }
 
-            // Process and merge tool call deltas.
+            // Handle tool calls
             if (delta.tool_calls != null) {
               for (const toolCallDelta of delta.tool_calls) {
                 const index = toolCallDelta.index
@@ -618,47 +630,45 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
 
                   toolCalls[index] = {
                     id: toolCallDelta.id,
-                    type: "function",
-                    function: {
-                      name: toolCallDelta.function.name,
-                      arguments: toolCallDelta.function.arguments ?? "",
-                    },
+                    name: toolCallDelta.function.name,
+                    arguments: toolCallDelta.function.arguments ?? "",
                     hasFinished: false,
                   }
 
                   const toolCall = toolCalls[index]
 
-                  if (
-                    toolCall.function?.name != null
-                    && toolCall.function?.arguments != null
-                  ) {
-                    if (toolCall.function.arguments.length > 0) {
-                      controller.enqueue({
-                        type: "tool-call-delta",
-                        toolCallType: "function",
-                        toolCallId: toolCall.id,
-                        toolName: toolCall.function.name,
-                        argsTextDelta: toolCall.function.arguments,
-                      })
-                    }
+                  // Emit tool-input-start
+                  controller.enqueue({
+                    type: "tool-input-start",
+                    id: toolCall.id,
+                    toolName: toolCall.name,
+                  })
 
-                    // If the accumulated arguments are valid JSON, finish the tool call.
-                    if (isParsableJson(toolCall.function.arguments)) {
-                      controller.enqueue({
-                        type: "tool-call",
-                        toolCallType: "function",
-                        toolCallId: toolCall.id ?? generateId(),
-                        toolName: toolCall.function.name,
-                        args: toolCall.function.arguments,
-                      })
-                      toolCall.hasFinished = true
-                    }
+                  if (toolCall.arguments.length > 0) {
+                    controller.enqueue({
+                      type: "tool-input-delta",
+                      id: toolCall.id,
+                      delta: toolCall.arguments,
+                    })
+                  }
+
+                  if (isParsableJson(toolCall.arguments)) {
+                    controller.enqueue({
+                      type: "tool-input-end",
+                      id: toolCall.id,
+                    })
+                    controller.enqueue({
+                      type: "tool-call",
+                      toolCallId: toolCall.id,
+                      toolName: toolCall.name,
+                      input: toolCall.arguments,
+                    })
+                    toolCall.hasFinished = true
                   }
 
                   continue
                 }
 
-                // Merge new delta with ongoing tool call.
                 const toolCall = toolCalls[index]
 
                 if (toolCall.hasFinished) {
@@ -666,29 +676,25 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
                 }
 
                 if (toolCallDelta.function?.arguments != null) {
-                  toolCall.function!.arguments
-                      += toolCallDelta.function?.arguments ?? ""
+                  toolCall.arguments += toolCallDelta.function.arguments
                 }
 
                 controller.enqueue({
-                  type: "tool-call-delta",
-                  toolCallType: "function",
-                  toolCallId: toolCall.id,
-                  toolName: toolCall.function.name,
-                  argsTextDelta: toolCallDelta.function.arguments ?? "",
+                  type: "tool-input-delta",
+                  id: toolCall.id,
+                  delta: toolCallDelta.function?.arguments ?? "",
                 })
 
-                if (
-                  toolCall.function?.name != null
-                  && toolCall.function?.arguments != null
-                  && isParsableJson(toolCall.function.arguments)
-                ) {
+                if (isParsableJson(toolCall.arguments)) {
+                  controller.enqueue({
+                    type: "tool-input-end",
+                    id: toolCall.id,
+                  })
                   controller.enqueue({
                     type: "tool-call",
-                    toolCallType: "function",
-                    toolCallId: toolCall.id ?? generateId(),
-                    toolName: toolCall.function.name,
-                    args: toolCall.function.arguments,
+                    toolCallId: toolCall.id,
+                    toolName: toolCall.name,
+                    input: toolCall.arguments,
                   })
                   toolCall.hasFinished = true
                 }
@@ -697,31 +703,36 @@ export class QwenChatLanguageModel implements LanguageModelV1 {
           },
 
           flush(controller) {
-            // Build final metadata and finish streaming.
+            // Close text and reasoning if they were started
+            if (textId) {
+              controller.enqueue({ type: "text-end", id: textId })
+            }
+            if (reasoningId) {
+              controller.enqueue({ type: "reasoning-end", id: reasoningId })
+            }
+
+            // Emit final finish event
             const metadata = metadataExtractor?.buildMetadata()
             controller.enqueue({
               type: "finish",
               finishReason,
-              usage: {
-                promptTokens: usage.promptTokens ?? Number.NaN,
-                completionTokens: usage.completionTokens ?? Number.NaN,
-              },
+              usage,
               ...(metadata && { providerMetadata: metadata }),
             })
           },
         }),
       ),
-      rawCall: { rawPrompt, rawSettings },
-      rawResponse: { headers: responseHeaders },
-      warnings,
       request: { body },
+      response: { headers: responseHeaders },
     }
   }
 }
 
 // limited version of the schema, focussed on what is needed for the implementation
 // this approach limits breakages when the API changes and increases efficiency
-function createQwenChatChunkSchema<ERROR_SCHEMA extends z.ZodType>(errorSchema: ERROR_SCHEMA) {
+function createQwenChatChunkSchema<ERROR_SCHEMA extends z.ZodType>(
+  errorSchema: ERROR_SCHEMA,
+) {
   return z.union([
     z.object({
       id: z.string().nullish(),

@@ -1,22 +1,22 @@
 import { loadApiKey } from "@ai-sdk/provider-utils"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { QwenChatLanguageModel } from "./qwen-chat-language-model"
-import { QwenCompletionLanguageModel } from "./qwen-completion-language-model"
-import { QwenEmbeddingModel } from "./qwen-embedding-model"
-import { createQwen } from "./qwen-provider"
+import { QwenChatLanguageModel } from "../qwen-chat-language-model"
+import { QwenCompletionLanguageModel } from "../qwen-completion-language-model"
+import { QwenEmbeddingModel } from "../qwen-embedding-model"
+import { createQwen } from "../qwen-provider"
 
 vi.stubEnv("DASHSCOPE_API_KEY", "test-api-key-123")
 
 // Mock the model classes
-vi.mock("./qwen-chat-language-model", () => ({
+vi.mock("../qwen-chat-language-model", () => ({
   QwenChatLanguageModel: vi.fn(),
 }))
 
-vi.mock("./qwen-completion-language-model", () => ({
+vi.mock("../qwen-completion-language-model", () => ({
   QwenCompletionLanguageModel: vi.fn(),
 }))
 
-vi.mock("./qwen-embedding-model", () => ({
+vi.mock("../qwen-embedding-model", () => ({
   QwenEmbeddingModel: vi.fn(),
 }))
 
@@ -74,7 +74,6 @@ describe("qwenProvider", () => {
         settings,
         expect.objectContaining({
           provider: "qwen.chat",
-          defaultObjectGenerationMode: "tool",
         }),
       )
     })

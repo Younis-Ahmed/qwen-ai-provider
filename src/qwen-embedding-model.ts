@@ -1,19 +1,11 @@
-import type {
-  EmbeddingModelV1,
-} from "@ai-sdk/provider"
-import type {
-  FetchFunction,
-} from "@ai-sdk/provider-utils"
+import type { EmbeddingModelV2 } from "@ai-sdk/provider"
+import type { FetchFunction } from "@ai-sdk/provider-utils"
 import type {
   QwenEmbeddingModelId,
   QwenEmbeddingSettings,
 } from "./qwen-embedding-settings"
-import type {
-  QwenErrorStructure,
-} from "./qwen-error"
-import {
-  TooManyEmbeddingValuesForCallError,
-} from "@ai-sdk/provider"
+import type { QwenErrorStructure } from "./qwen-error"
+import { TooManyEmbeddingValuesForCallError } from "@ai-sdk/provider"
 import {
   combineHeaders,
   createJsonErrorResponseHandler,
@@ -21,9 +13,7 @@ import {
   postJsonToApi,
 } from "@ai-sdk/provider-utils"
 import { z } from "zod"
-import {
-  defaultQwenErrorStructure,
-} from "./qwen-error"
+import { defaultQwenErrorStructure } from "./qwen-error"
 
 interface QwenEmbeddingConfig {
   /**
@@ -50,9 +40,8 @@ const qwenTextEmbeddingResponseSchema = z.object({
   usage: z.object({ prompt_tokens: z.number() }).nullish(),
 })
 
-export class QwenEmbeddingModel
-implements EmbeddingModelV1<string> {
-  readonly specificationVersion = "v1"
+export class QwenEmbeddingModel implements EmbeddingModelV2<string> {
+  readonly specificationVersion = "v2"
   readonly modelId: QwenEmbeddingModelId
 
   private readonly config: QwenEmbeddingConfig
@@ -62,7 +51,7 @@ implements EmbeddingModelV1<string> {
     return this.config.provider
   }
 
-  get maxEmbeddingsPerCall(): number {
+  get maxEmbeddingsPerCall(): number | undefined {
     return this.config.maxEmbeddingsPerCall ?? 2048
   }
 
@@ -81,39 +70,39 @@ implements EmbeddingModelV1<string> {
   }
 
   /**
-   * Sends a request to the Qwen API to generate embeddings for the provided text inputs.
-   *
-   * This function validates that the number of embedding values does not exceed the allowed limit,
-   * constructs a JSON payload with the required parameters, and sends it to the API endpoint.
-   * It processes the response to extract embeddings, usage statistics, and raw response headers.
+   * Sends a request to the Qwen API to generate embeddings for the provided text inputs (V2).
    *
    * @param param0 - The parameters object.
    * @param param0.values - An array of strings to be embedded.
    * @param param0.headers - Optional HTTP headers for the API request.
    * @param param0.abortSignal - Optional signal to abort the API request.
-   * @returns A promise that resolves with an object containing:
-   *   - embeddings: An array of embedding arrays.
-   *   - usage: Optional usage information, including token counts.
-   *   - rawResponse: The response headers from the API call.
+   * @param param0.providerOptions - Additional provider-specific options.
+   * @returns A promise that resolves with an object containing embeddings, usage, and response metadata.
    *
    * @throws TooManyEmbeddingValuesForCallError if the number of input values exceeds the maximum allowed.
    */
   async doEmbed({
     values,
-      headers,
-      abortSignal,
-  }: Parameters<EmbeddingModelV1<string>["doEmbed"]>[0]): Promise<
-      Awaited<ReturnType<EmbeddingModelV1<string>["doEmbed"]>>
-    > {
+    headers,
+    abortSignal,
+    providerOptions,
+  }: Parameters<EmbeddingModelV2<string>["doEmbed"]>[0]): Promise<
+    Awaited<ReturnType<EmbeddingModelV2<string>["doEmbed"]>>
+  > {
     // Validate that number of embeddings does not exceed maximum allowed.
-    if (values.length > this.maxEmbeddingsPerCall) {
+    const maxEmbeddings = this.maxEmbeddingsPerCall ?? Number.POSITIVE_INFINITY
+    if (values.length > maxEmbeddings) {
       throw new TooManyEmbeddingValuesForCallError({
         provider: this.provider,
         modelId: this.modelId,
-        maxEmbeddingsPerCall: this.maxEmbeddingsPerCall,
+        maxEmbeddingsPerCall: maxEmbeddings,
         values,
       })
     }
+
+    // Get provider-specific options if available
+    const providerOptionsName = this.config.provider.split(".")[0].trim()
+    const specificProviderOptions = providerOptions?.[providerOptionsName]
 
     // Post the JSON payload to the API endpoint.
     const { responseHeaders, value: response } = await postJsonToApi({
@@ -128,6 +117,7 @@ implements EmbeddingModelV1<string> {
         encoding_format: "float",
         dimensions: this.settings.dimensions,
         user: this.settings.user,
+        ...specificProviderOptions,
       },
       // Handle response errors using the provided error structure.
       failedResponseHandler: createJsonErrorResponseHandler(
@@ -141,13 +131,13 @@ implements EmbeddingModelV1<string> {
       fetch: this.config.fetch,
     })
 
-    // Map response data to output format.
+    // Map response data to V2 output format.
     return {
       embeddings: response.data.map(item => item.embedding),
       usage: response.usage
         ? { tokens: response.usage.prompt_tokens }
         : undefined,
-      rawResponse: { headers: responseHeaders },
+      response: { headers: responseHeaders },
     }
   }
 }

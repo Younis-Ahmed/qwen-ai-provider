@@ -1,26 +1,24 @@
 import type {
-  LanguageModelV1Prompt,
-  LanguageModelV1ProviderMetadata,
+  LanguageModelV2Prompt,
+  SharedV2ProviderOptions,
 } from "@ai-sdk/provider"
 import type { QwenChatPrompt } from "./qwen-api-types"
-import {
-  UnsupportedFunctionalityError,
-} from "@ai-sdk/provider"
+import { UnsupportedFunctionalityError } from "@ai-sdk/provider"
 import { convertUint8ArrayToBase64 } from "@ai-sdk/provider-utils"
 
-// JSDoc for helper function to extract Qwen metadata.
+// JSDoc for helper function to extract Qwen options.
 /**
- * Extracts Qwen-specific metadata from a message.
+ * Extracts Qwen-specific options from a message.
  *
- * @param message - An object that may contain providerMetadata
- * @param message.providerMetadata - Provider-specific metadata containing Qwen configuration
- * @returns The Qwen metadata object or an empty object if none exists
+ * @param message - An object that may contain providerOptions
+ * @param message.providerOptions - Provider-specific options containing Qwen configuration
+ * @returns The Qwen options object or an empty object if none exists
  */
 
-function getQwenMetadata(message: {
-  providerMetadata?: LanguageModelV1ProviderMetadata
+function getQwenOptions(message: {
+  providerOptions?: SharedV2ProviderOptions
 }) {
-  return message?.providerMetadata?.qwen ?? {}
+  return message?.providerOptions?.qwen ?? {}
 }
 
 /**
@@ -30,16 +28,16 @@ function getQwenMetadata(message: {
  * @returns An array of Qwen chat messages.
  */
 export function convertToQwenChatMessages(
-  prompt: LanguageModelV1Prompt,
+  prompt: LanguageModelV2Prompt,
 ): QwenChatPrompt {
   const messages: QwenChatPrompt = []
   // Iterate over each prompt message.
   for (const { role, content, ...message } of prompt) {
-    const metadata = getQwenMetadata({ ...message })
+    const options = getQwenOptions({ ...message })
     switch (role) {
       case "system": {
-        // System messages are sent directly with metadata.
-        messages.push({ role: "system", content, ...metadata })
+        // System messages are sent directly with options.
+        messages.push({ role: "system", content, ...options })
         break
       }
 
@@ -49,7 +47,7 @@ export function convertToQwenChatMessages(
           messages.push({
             role: "user",
             content: content[0].text,
-            ...getQwenMetadata(content[0]),
+            ...getQwenOptions(content[0]),
           })
           break
         }
@@ -57,36 +55,56 @@ export function convertToQwenChatMessages(
         messages.push({
           role: "user",
           content: content.map((part) => {
-            const partMetadata = getQwenMetadata(part)
+            const partOptions = getQwenOptions(part)
             switch (part.type) {
               case "text": {
                 // Plain text conversion.
-                return { type: "text", text: part.text, ...partMetadata }
+                return { type: "text", text: part.text, ...partOptions }
               }
-              case "image": {
-                // Convert images and encode if necessary.
-                return {
-                  type: "image_url",
-                  image_url: {
-                    url:
-                      part.image instanceof URL
-                        ? part.image.toString()
-                        : `data:${
-                          part.mimeType ?? "image/jpeg"
-                        };base64,${convertUint8ArrayToBase64(part.image)}`,
-                  },
-                  ...partMetadata,
+              case "file": {
+                // Check if this is an image file
+                if (part.mediaType && part.mediaType.startsWith("image/")) {
+                  // Convert images and encode if necessary.
+                  const data = part.data
+                  let url: string
+                  if (typeof data === "string") {
+                    // Preserve full URLs and pre-formed data URLs; otherwise, treat as raw base64
+                    if (data.startsWith("http") || data.startsWith("data:")) {
+                      url = data
+                    }
+                    else {
+                      url = `data:${part.mediaType};base64,${data}`
+                    }
+                  }
+                  else if (data instanceof URL) {
+                    url = data.toString()
+                  }
+                  else {
+                    // Uint8Array
+                    url = `data:${part.mediaType};base64,${convertUint8ArrayToBase64(data)}`
+                  }
+                  return {
+                    type: "image_url",
+                    image_url: { url },
+                    ...partOptions,
+                  }
                 }
+                // Non-image files are unsupported
+                throw new UnsupportedFunctionalityError({
+                  functionality:
+                    "Non-image file content parts in user messages",
+                })
               }
               default: {
-                // Unsupported file content parts trigger an error.
+                // Unsupported content parts trigger an error.
+                const _exhaustiveCheck: never = part
                 throw new UnsupportedFunctionalityError({
-                  functionality: "File content parts in user messages",
+                  functionality: `Unsupported content part type: ${_exhaustiveCheck}`,
                 })
               }
             }
           }),
-          ...metadata,
+          ...options,
         })
 
         break
@@ -102,7 +120,7 @@ export function convertToQwenChatMessages(
         }> = []
 
         for (const part of content) {
-          const partMetadata = getQwenMetadata(part)
+          const partOptions = getQwenOptions(part)
           switch (part.type) {
             case "text": {
               // Append each text part.
@@ -116,18 +134,24 @@ export function convertToQwenChatMessages(
                 type: "function",
                 function: {
                   name: part.toolName,
-                  arguments: JSON.stringify(part.args),
+                  arguments: JSON.stringify(part.input),
                 },
-                ...partMetadata,
+                ...partOptions,
               })
               break
             }
             case "file": // Add cases in v5
-            case "reasoning":
-            case "redacted-reasoning": {
+            case "reasoning": {
               // Ignore or handle these part types as needed
               throw new UnsupportedFunctionalityError({
                 functionality: `${part.type} content parts in assistant messages`,
+              })
+            }
+            case "tool-result": {
+              // Tool results should not appear in assistant messages
+              throw new UnsupportedFunctionalityError({
+                functionality:
+                  "tool-result content parts in assistant messages",
               })
             }
             default: {
@@ -142,21 +166,33 @@ export function convertToQwenChatMessages(
           role: "assistant",
           content: text,
           tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
-          ...metadata,
+          ...options,
         })
 
         break
       }
 
       case "tool": {
-        // Process tool responses by converting result to JSON string.
+        // Process tool responses by converting output to JSON string.
         for (const toolResponse of content) {
-          const toolResponseMetadata = getQwenMetadata(toolResponse)
+          const toolResponseOptions = getQwenOptions(toolResponse)
+          const output = toolResponse.output
+
+          // Extract the value from the V2 output format
+          let toolContent: string
+          if (output.type === "text" || output.type === "error-text") {
+            toolContent = output.value
+          }
+          else {
+            // json or error-json
+            toolContent = JSON.stringify(output.value)
+          }
+
           messages.push({
             role: "tool",
             tool_call_id: toolResponse.toolCallId,
-            content: JSON.stringify(toolResponse.result),
-            ...toolResponseMetadata,
+            content: toolContent,
+            ...toolResponseOptions,
           })
         }
         break

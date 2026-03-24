@@ -1,8 +1,4 @@
-import type {
-  EmbeddingModelV1,
-  LanguageModelV1,
-  ProviderV1,
-} from "@ai-sdk/provider"
+import type { EmbeddingModelV2, LanguageModelV2 } from "@ai-sdk/provider"
 import type { FetchFunction } from "@ai-sdk/provider-utils"
 import type { QwenChatModelId, QwenChatSettings } from "./qwen-chat-settings"
 import type {
@@ -22,8 +18,8 @@ import { QwenEmbeddingModel } from "./qwen-embedding-model"
  * QwenProvider function type and its properties.
  * Creates various language or embedding models based on the provided settings.
  */
-export interface QwenProvider extends ProviderV1 {
-  (modelId: QwenChatModelId, settings?: QwenChatSettings): LanguageModelV1
+export interface QwenProvider {
+  (modelId: QwenChatModelId, settings?: QwenChatSettings): LanguageModelV2
 
   /**
    * Create a new chat model for text generation.
@@ -34,7 +30,7 @@ export interface QwenProvider extends ProviderV1 {
   chatModel: (
     modelId: QwenChatModelId,
     settings?: QwenChatSettings,
-  ) => LanguageModelV1
+  ) => LanguageModelV2
 
   /**
   Creates a text embedding model for text generation.
@@ -45,17 +41,17 @@ export interface QwenProvider extends ProviderV1 {
   textEmbeddingModel: (
     modelId: QwenEmbeddingModelId,
     settings?: QwenEmbeddingSettings,
-  ) => EmbeddingModelV1<string>
+  ) => EmbeddingModelV2<string>
 
   languageModel: (
     modelId: QwenChatModelId,
     settings?: QwenChatSettings,
-  ) => LanguageModelV1
+  ) => LanguageModelV2
 
   completion: (
     modelId: QwenCompletionModelId,
     settings?: QwenCompletionSettings,
-  ) => LanguageModelV1
+  ) => LanguageModelV2
 }
 
 /**
@@ -144,10 +140,7 @@ export function createQwen(options: QwenProviderSettings = {}): QwenProvider {
     modelId: QwenChatModelId,
     settings: QwenChatSettings = {},
   ) =>
-    new QwenChatLanguageModel(modelId, settings, {
-      ...getCommonModelConfig("chat"),
-      defaultObjectGenerationMode: "tool",
-    })
+    new QwenChatLanguageModel(modelId, settings, getCommonModelConfig("chat"))
 
   // Create a completion model instance.
   const createCompletionModel = (

@@ -31,8 +31,7 @@ export interface QwenSystemMessage extends JsonRecord {
 /**
  * User messages sent by the user to the model.
  */
-export interface QwenUserMessage
-  extends JsonRecord<QwenContentPart> {
+export interface QwenUserMessage extends JsonRecord<QwenContentPart> {
   role: "user"
   content: string | Array<QwenContentPart>
 }
@@ -40,9 +39,7 @@ export interface QwenUserMessage
 /**
  * Represents a part of a message content.
  */
-export type QwenContentPart
-  = | QwenContentPartText
-    | QwenContentPartImage
+export type QwenContentPart = QwenContentPartText | QwenContentPartImage
 
 /**
  * Message part that contains an image URL.
@@ -63,8 +60,7 @@ export interface QwenContentPartText extends JsonRecord {
 /**
  * Assistant messages response from the model.
  */
-export interface QwenAssistantMessage
-  extends JsonRecord<QwenMessageToolCall> {
+export interface QwenAssistantMessage extends JsonRecord<QwenMessageToolCall> {
   role: "assistant"
   content?: string | null
   tool_calls?: Array<QwenMessageToolCall>

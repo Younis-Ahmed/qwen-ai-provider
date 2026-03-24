@@ -1,6 +1,6 @@
 // https://www.alibabacloud.com/help/en/model-studio/getting-started/models
 export type QwenChatModelId
-// Text Geeration
+  // Text Geeration
   = | "qwen2.5-14b-instruct-1m"
     | "qwen2.5-72b-instruct"
     | "qwen2.5-32b-instruct"
@@ -17,9 +17,9 @@ export type QwenChatModelId
     | "qwen-turbo"
     | "qwen-turbo-latest"
     | "qwen-turbo-2024-11-01"
-// Image/Video Understanding
+  // Image/Video Understanding
     | "qwen-vl-max"
-// Image Understanding
+  // Image Understanding
     | "qwen-vl-plus"
     | "qwen2.5-vl-72b-instruct"
     | "qwen2.5-vl-7b-instruct"

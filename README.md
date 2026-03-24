@@ -1,4 +1,4 @@
-# Qwen AI Provider for Vercel AI SDK  
+# Qwen AI Provider for Vercel AI SDK
 [![Qwen Supported](https://img.shields.io/badge/Vercel_AI_SDK-Qwen_Provider-blue)](https://sdk.vercel.ai/providers/community-providers/qwen)
 
 ## Table of Contents
@@ -11,7 +11,7 @@
 - [Embedding Models](#embedding-models)
 - [Examples](#examples)
 
-[younis-ahmed/qwen-vercel-ai-sdk-provider](https://github.com/younis-ahmed/qwen-ai-provider) enables seamless integration of **Alibaba Cloud's Qwen language models** with applications built using **Vercel AI SDK**. This community-maintained provider supports:  
+[younis-ahmed/qwen-vercel-ai-sdk-provider](https://github.com/younis-ahmed/qwen-ai-provider) enables seamless integration of **Alibaba Cloud's Qwen language models** with applications built using **Vercel AI SDK**. This community-maintained provider supports:
 
 - Full compatibility with Vercel AI SDK's `generateText`, `streamText`, and tool-calling functions.
 - 15+ Qwen models including `qwen-plus`, `qwen-vl-max`, and `qwen2.5 series`.
@@ -30,22 +30,22 @@ graph TD
     B --> C{AI Provider}
     C --> D[qwen-ai-provider]
     C --> E[Community Providers]
-    
+
     D --> F[Qwen API Endpoints]
     F --> G[Qwen-plus]
     F --> H[Qwen-vl-max]
     F --> I[Qwen-max]
-    
+
     B --> J[AI SDK Functions]
     J --> K["generateText()"]
     J --> L["streamText()"]
     J --> M["generateObject()"]
     J --> N["streamUI()"]
-    
+
     A --> O[Environment Variables]
     O --> P["DASHSCOPE_API_KEY"]
     O --> Q["AI_PROVIDER=qwen"]
-    
+
     subgraph Provider Configuration
         D --> R["createQwen({
           baseURL: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
@@ -54,7 +54,7 @@ graph TD
         R --> S[Model Instance]
         S --> T["qwen('qwen-plus')"]
     end
-    
+
     subgraph Response Handling
         K --> U[Text Output]
         L --> V[Streaming Response]
@@ -94,6 +94,11 @@ npm install qwen-ai-provider
 # For yarn
 yarn add qwen-ai-provider
 ```
+
+### Zod Compatibility
+- Supports `zod` versions: `^3.25.76` or `^4.1.8`.
+- This matches the peer dependency range required by `@ai-sdk/provider-utils@3.x` to ensure installs resolve cleanly.
+- The provider uses only APIs compatible with both ranges.
 
 ## Provider Instance
 
@@ -167,7 +172,7 @@ const { text } = await generateText({
 | `qwen2.5-14b-instruct-1m` | :x:                | :heavy_check_mark:| :heavy_check_mark: | :heavy_check_mark: |
 | `qwen2.5-vl-72b-instruct` | :heavy_check_mark: | :heavy_check_mark:| :heavy_check_mark: | :heavy_check_mark: |
 
-> **Note**  
+> **Note**
 > The table above lists popular models. Please see the [Qwen docs](https://www.alibabacloud.com/help/en/model-studio/getting-started/models) for a full list of available models. You can also pass any available provider model ID as a string if needed.
 
 ## Embedding Models

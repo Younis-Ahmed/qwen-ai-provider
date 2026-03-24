@@ -1,4 +1,3 @@
-import type { ZodSchema } from "zod"
 import { createJsonErrorResponseHandler } from "@ai-sdk/provider-utils"
 import { z } from "zod"
 
@@ -22,7 +21,8 @@ export interface QwenErrorStructure<T> {
   /**
    * Zod schema to validate error data.
    */
-  errorSchema: ZodSchema<T>
+  // Use ZodType to support both zod v3.25+ and v4
+  errorSchema: z.ZodType<T>
   /**
    * Maps error details to a human-readable message.
    */
