@@ -19,3 +19,11 @@ yarn-error.log*
 
 # OS generated files
 .DS_Store
+
+# Claude files
+/.claude
+/coverage
+*.backup
+CLAUDE.md
+AGENTS.md
+test-rerank.ts

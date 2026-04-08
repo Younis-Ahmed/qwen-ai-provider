@@ -1,23 +1,28 @@
 import { loadApiKey } from "@ai-sdk/provider-utils"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { QwenChatLanguageModel } from "./qwen-chat-language-model"
-import { QwenCompletionLanguageModel } from "./qwen-completion-language-model"
-import { QwenEmbeddingModel } from "./qwen-embedding-model"
-import { createQwen } from "./qwen-provider"
+import { QwenChatLanguageModel } from "../models/chat"
+import { QwenCompletionLanguageModel } from "../models/completion"
+import { QwenEmbeddingModel } from "../models/embedding"
+import { QwenRerankingModel } from "../models/reranking"
+import { createQwen } from "../provider"
 
 vi.stubEnv("DASHSCOPE_API_KEY", "test-api-key-123")
 
 // Mock the model classes
-vi.mock("./qwen-chat-language-model", () => ({
+vi.mock("../models/chat", () => ({
   QwenChatLanguageModel: vi.fn(),
 }))
 
-vi.mock("./qwen-completion-language-model", () => ({
+vi.mock("../models/completion", () => ({
   QwenCompletionLanguageModel: vi.fn(),
 }))
 
-vi.mock("./qwen-embedding-model", () => ({
+vi.mock("../models/embedding", () => ({
   QwenEmbeddingModel: vi.fn(),
+}))
+
+vi.mock("../models/reranking", () => ({
+  QwenRerankingModel: vi.fn(),
 }))
 
 vi.mock("@ai-sdk/provider-utils", () => ({
@@ -74,7 +79,6 @@ describe("qwenProvider", () => {
         settings,
         expect.objectContaining({
           provider: "qwen.chat",
-          defaultObjectGenerationMode: "tool",
         }),
       )
     })
@@ -94,8 +98,22 @@ describe("qwenProvider", () => {
     })
   })
 
-  describe("textEmbeddingModel", () => {
-    it("should construct a text embedding model with correct configuration", () => {
+  describe("embeddingModel", () => {
+    it("should construct an embedding model with correct configuration", () => {
+      const settings = { user: "foo-user" }
+      provider.embeddingModel("qwen-vl-plus", settings)
+      expect(QwenEmbeddingModel).toHaveBeenCalledWith(
+        "qwen-vl-plus",
+        settings,
+        expect.objectContaining({
+          provider: "qwen.embedding",
+        }),
+      )
+    })
+  })
+
+  describe("textEmbeddingModel (deprecated)", () => {
+    it("should construct an embedding model with correct configuration", () => {
       const settings = { user: "foo-user" }
       provider.textEmbeddingModel("qwen-vl-plus", settings)
       expect(QwenEmbeddingModel).toHaveBeenCalledWith(
@@ -103,6 +121,31 @@ describe("qwenProvider", () => {
         settings,
         expect.objectContaining({
           provider: "qwen.embedding",
+        }),
+      )
+    })
+  })
+
+  describe("rerankingModel", () => {
+    it("should construct a reranking model with correct configuration", () => {
+      const settings = { returnDocuments: true }
+      provider.rerankingModel("gte-rerank-v2", settings)
+      expect(QwenRerankingModel).toHaveBeenCalledWith(
+        "gte-rerank-v2",
+        settings,
+        expect.objectContaining({
+          provider: "qwen.reranking",
+        }),
+      )
+    })
+
+    it("should work with qwen3-reranker models", () => {
+      provider.rerankingModel("qwen3-reranker-0.6b", {})
+      expect(QwenRerankingModel).toHaveBeenCalledWith(
+        "qwen3-reranker-0.6b",
+        {},
+        expect.objectContaining({
+          provider: "qwen.reranking",
         }),
       )
     })

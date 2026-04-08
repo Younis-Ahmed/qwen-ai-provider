@@ -3,7 +3,7 @@
  *
  * @module qwen-completion-settings
  */
-import type { QwenChatModelId, QwenChatSettings } from "./qwen-chat-settings"
+import type { QwenChatModelId, QwenChatSettings } from "./chat"
 
 /**
  * Alias for Qwen Chat Model ID used for completions.

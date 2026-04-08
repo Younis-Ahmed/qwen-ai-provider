@@ -1,29 +1,34 @@
 import type {
-  EmbeddingModelV1,
-  LanguageModelV1,
-  ProviderV1,
+  EmbeddingModelV3,
+  LanguageModelV3,
+  RerankingModelV3,
 } from "@ai-sdk/provider"
 import type { FetchFunction } from "@ai-sdk/provider-utils"
-import type { QwenChatModelId, QwenChatSettings } from "./qwen-chat-settings"
+import type { QwenChatModelId, QwenChatSettings } from "./config/chat"
 import type {
   QwenCompletionModelId,
   QwenCompletionSettings,
-} from "./qwen-completion-settings"
+} from "./config/completion"
 import type {
   QwenEmbeddingModelId,
   QwenEmbeddingSettings,
-} from "./qwen-embedding-settings"
+} from "./config/embedding"
+import type {
+  QwenRerankingModelId,
+  QwenRerankingSettings,
+} from "./config/reranking"
 import { loadApiKey, withoutTrailingSlash } from "@ai-sdk/provider-utils"
-import { QwenChatLanguageModel } from "./qwen-chat-language-model"
-import { QwenCompletionLanguageModel } from "./qwen-completion-language-model"
-import { QwenEmbeddingModel } from "./qwen-embedding-model"
+import { QwenChatLanguageModel } from "./models/chat"
+import { QwenCompletionLanguageModel } from "./models/completion"
+import { QwenEmbeddingModel } from "./models/embedding"
+import { QwenRerankingModel } from "./models/reranking"
 
 /**
  * QwenProvider function type and its properties.
  * Creates various language or embedding models based on the provided settings.
  */
-export interface QwenProvider extends ProviderV1 {
-  (modelId: QwenChatModelId, settings?: QwenChatSettings): LanguageModelV1
+export interface QwenProvider {
+  (modelId: QwenChatModelId, settings?: QwenChatSettings): LanguageModelV3
 
   /**
    * Create a new chat model for text generation.
@@ -34,28 +39,47 @@ export interface QwenProvider extends ProviderV1 {
   chatModel: (
     modelId: QwenChatModelId,
     settings?: QwenChatSettings,
-  ) => LanguageModelV1
+  ) => LanguageModelV3
 
   /**
-  Creates a text embedding model for text generation.
+  Creates an embedding model for text generation.
   @param modelId The model ID.
   @param settings The settings for the model.
-  @returns The text embedding model.
+  @returns The embedding model.
+   */
+  embeddingModel: (
+    modelId: QwenEmbeddingModelId,
+    settings?: QwenEmbeddingSettings,
+  ) => EmbeddingModelV3
+
+  /**
+   * @deprecated Use `embeddingModel` instead.
    */
   textEmbeddingModel: (
     modelId: QwenEmbeddingModelId,
     settings?: QwenEmbeddingSettings,
-  ) => EmbeddingModelV1<string>
+  ) => EmbeddingModelV3
+
+  /**
+   * Creates a reranking model for document relevance ranking.
+   * @param modelId The model ID (e.g., 'gte-rerank-v2', 'qwen3-reranker-0.6b').
+   * @param settings The settings for the model.
+   * @returns The reranking model.
+   */
+  rerankingModel: (
+    modelId: QwenRerankingModelId,
+    settings?: QwenRerankingSettings,
+  ) => RerankingModelV3
 
   languageModel: (
     modelId: QwenChatModelId,
     settings?: QwenChatSettings,
-  ) => LanguageModelV1
+  ) => LanguageModelV3
 
   completion: (
     modelId: QwenCompletionModelId,
     settings?: QwenCompletionSettings,
-  ) => LanguageModelV1
+  ) => LanguageModelV3
 }
 
 /**
@@ -144,10 +168,7 @@ export function createQwen(options: QwenProviderSettings = {}): QwenProvider {
     modelId: QwenChatModelId,
     settings: QwenChatSettings = {},
   ) =>
-    new QwenChatLanguageModel(modelId, settings, {
-      ...getCommonModelConfig("chat"),
-      defaultObjectGenerationMode: "tool",
-    })
+    new QwenChatLanguageModel(modelId, settings, getCommonModelConfig("chat"))
 
   // Create a completion model instance.
   const createCompletionModel = (
@@ -171,13 +192,34 @@ export function createQwen(options: QwenProviderSettings = {}): QwenProvider {
       getCommonModelConfig("embedding"),
     )
 
+  // Create a reranking model instance.
+  // Note: qwen3-rerank uses OpenAI-compatible API (/compatible-mode/v1/rerank)
+  //       gte-rerank models use DashScope native API (/api/v1/services/rerank/...)
+  // The baseURL is extracted without /compatible-mode/v1 suffix for flexibility.
+  const createRerankingModel = (
+    modelId: QwenRerankingModelId,
+    settings: QwenRerankingSettings = {},
+  ) => {
+    // Extract the base domain from the baseURL (remove /compatible-mode/v1 if present)
+    const rerankBaseURL = (baseURL ?? "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
+      .replace(/\/compatible-mode\/v1$/, "")
+    return new QwenRerankingModel(modelId, settings, {
+      provider: "qwen.reranking",
+      baseURL: rerankBaseURL,
+      headers: getHeaders,
+      fetch: options.fetch,
+    })
+  }
+
   // Default provider returns a chat model.
   const provider = (modelId: QwenChatModelId, settings?: QwenChatSettings) =>
     createChatModel(modelId, settings)
 
   provider.chatModel = createChatModel
   provider.completion = createCompletionModel
-  provider.textEmbeddingModel = createTextEmbeddingModel
+  provider.embeddingModel = createTextEmbeddingModel
+  provider.textEmbeddingModel = createTextEmbeddingModel // deprecated alias
+  provider.rerankingModel = createRerankingModel
   provider.languageModel = createChatModel
   return provider as QwenProvider
 }
