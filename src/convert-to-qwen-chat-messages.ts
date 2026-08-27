@@ -71,8 +71,7 @@ export function convertToQwenChatMessages(
                     url:
                       part.image instanceof URL
                         ? part.image.toString()
-                        : `data:${
-                          part.mimeType ?? "image/jpeg"
+                        : `data:${part.mimeType ?? "image/jpeg"
                         };base64,${convertUint8ArrayToBase64(part.image)}`,
                   },
                   ...partMetadata,
