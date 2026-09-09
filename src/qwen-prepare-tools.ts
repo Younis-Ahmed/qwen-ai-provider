@@ -1,6 +1,8 @@
 import type {
-  LanguageModelV1,
-  LanguageModelV1CallWarning,
+  LanguageModelV2CallWarning,
+  LanguageModelV2FunctionTool,
+  LanguageModelV2ProviderDefinedTool,
+  LanguageModelV2ToolChoice,
 } from "@ai-sdk/provider"
 import {
   UnsupportedFunctionalityError,
@@ -8,16 +10,17 @@ import {
 
 /**
  * Prepares the tool configuration for language model generation.
- * @param param0 Object containing mode details and structured output flag.
- * @returns An object with tools, tool choice and any warnings.
+ * @param param0 Object containing tools and tool choice.
+ * @param param0.tools The tools available for language model generation.
+ * @param param0.toolChoice Specifies how the tool should be selected.
+ * @returns An object with tools, tool_choice and any warnings.
  */
 export function prepareTools({
-  mode,
+  tools,
+  toolChoice,
 }: {
-  mode: Parameters<LanguageModelV1["doGenerate"]>[0]["mode"] & {
-    type: "regular"
-  }
-  structuredOutputs: boolean
+  tools?: Array<LanguageModelV2FunctionTool | LanguageModelV2ProviderDefinedTool>
+  toolChoice?: LanguageModelV2ToolChoice
 }): {
   tools:
     | undefined
@@ -35,17 +38,16 @@ export function prepareTools({
     | "none"
     | "required"
     | undefined
-  toolWarnings: LanguageModelV1CallWarning[]
+  toolWarnings: LanguageModelV2CallWarning[]
 } {
   // Normalize tools array by converting empty array to undefined.
-  const tools = mode.tools?.length ? mode.tools : undefined
-  const toolWarnings: LanguageModelV1CallWarning[] = []
+  const normalizedTools = tools?.length ? tools : undefined
+  const toolWarnings: LanguageModelV2CallWarning[] = []
 
-  if (tools == null) {
+  if (normalizedTools == null) {
     return { tools: undefined, tool_choice: undefined, toolWarnings }
   }
 
-  const toolChoice = mode.toolChoice
   const qwenCompatTools: Array<{
     type: "function"
     function: {
@@ -56,20 +58,20 @@ export function prepareTools({
   }> = []
 
   // Process each tool and format for compatibility.
-  for (const tool of tools) {
-    if (tool.type === "provider-defined") {
-      // Warn if the tool is provider-defined.
-      toolWarnings.push({ type: "unsupported-tool", tool })
-    }
-    else {
+  for (const tool of normalizedTools) {
+    if (tool.type === "function") {
       qwenCompatTools.push({
         type: "function",
         function: {
           name: tool.name,
           description: tool.description,
-          parameters: tool.parameters,
+          parameters: tool.inputSchema,
         },
       })
+    }
+    else {
+      // Warn if the tool is provider-defined.
+      toolWarnings.push({ type: "unsupported-tool", tool })
     }
   }
 

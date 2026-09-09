@@ -4,7 +4,7 @@ import { convertToQwenChatMessages } from "./convert-to-qwen-chat-messages"
 vi.stubEnv("DASHSCOPE_API_KEY", "test-api-key-123")
 
 describe("user messages", () => {
-  it("should convert messages with only a text part to a string content", async () => {
+  it("should convert messages with only a text part to a string content", () => {
     const result = convertToQwenChatMessages([
       {
         role: "user",
@@ -15,16 +15,16 @@ describe("user messages", () => {
     expect(result).toEqual([{ role: "user", content: "Hello" }])
   })
 
-  it("should convert messages with image parts", async () => {
+  it("should convert messages with image file parts", () => {
     const result = convertToQwenChatMessages([
       {
         role: "user",
         content: [
           { type: "text", text: "Hello" },
           {
-            type: "image",
-            image: new Uint8Array([0, 1, 2, 3]),
-            mimeType: "image/png",
+            type: "file",
+            data: new Uint8Array([0, 1, 2, 3]),
+            mediaType: "image/png",
           },
         ],
       },
@@ -44,15 +44,15 @@ describe("user messages", () => {
     ])
   })
 
-  it("should handle URL-based images", async () => {
+  it("should handle URL-based images", () => {
     const result = convertToQwenChatMessages([
       {
         role: "user",
         content: [
           {
-            type: "image",
-            image: new URL("https://example.com/image.jpg"),
-            mimeType: "image/jpeg",
+            type: "file",
+            data: new URL("https://example.com/image.jpg"),
+            mediaType: "image/jpeg",
           },
         ],
       },
@@ -70,6 +70,137 @@ describe("user messages", () => {
       },
     ])
   })
+
+  it("should convert video file parts", () => {
+    const result = convertToQwenChatMessages([
+      {
+        role: "user",
+        content: [
+          {
+            type: "file",
+            data: new URL("https://example.com/video.mp4"),
+            mediaType: "video/mp4",
+          },
+        ],
+      },
+    ])
+
+    expect(result).toEqual([
+      {
+        role: "user",
+        content: [
+          {
+            type: "video_url",
+            video_url: { url: "https://example.com/video.mp4" },
+          },
+        ],
+      },
+    ])
+  })
+
+  it("should convert audio file parts with the subtype as format", () => {
+    const result = convertToQwenChatMessages([
+      {
+        role: "user",
+        content: [
+          {
+            type: "file",
+            data: new URL("https://example.com/audio.wav"),
+            mediaType: "audio/wav",
+          },
+        ],
+      },
+    ])
+
+    expect(result).toEqual([
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_audio",
+            input_audio: {
+              data: "https://example.com/audio.wav",
+              format: "wav",
+            },
+          },
+        ],
+      },
+    ])
+  })
+
+  it("should map mpeg audio format to mp3", () => {
+    const result = convertToQwenChatMessages([
+      {
+        role: "user",
+        content: [
+          {
+            type: "file",
+            data: new URL("https://example.com/audio.mp3"),
+            mediaType: "audio/mpeg",
+          },
+        ],
+      },
+    ])
+
+    expect(result).toEqual([
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_audio",
+            input_audio: {
+              data: "https://example.com/audio.mp3",
+              format: "mp3",
+            },
+          },
+        ],
+      },
+    ])
+  })
+
+  it("should convert PDF file parts", () => {
+    const result = convertToQwenChatMessages([
+      {
+        role: "user",
+        content: [
+          {
+            type: "file",
+            data: new URL("https://example.com/document.pdf"),
+            mediaType: "application/pdf",
+          },
+        ],
+      },
+    ])
+
+    expect(result).toEqual([
+      {
+        role: "user",
+        content: [
+          {
+            type: "file",
+            file: { file_url: "https://example.com/document.pdf" },
+          },
+        ],
+      },
+    ])
+  })
+
+  it("should throw for unsupported media types", () => {
+    expect(() =>
+      convertToQwenChatMessages([
+        {
+          role: "user",
+          content: [
+            {
+              type: "file",
+              data: new URL("https://example.com/file.zip"),
+              mediaType: "application/zip",
+            },
+          ],
+        },
+      ]),
+    ).toThrowError()
+  })
 })
 
 describe("tool calls", () => {
@@ -80,7 +211,7 @@ describe("tool calls", () => {
         content: [
           {
             type: "tool-call",
-            args: { foo: "bar123" },
+            input: { foo: "bar123" },
             toolCallId: "quux",
             toolName: "thwomp",
           },
@@ -93,7 +224,7 @@ describe("tool calls", () => {
             type: "tool-result",
             toolCallId: "quux",
             toolName: "thwomp",
-            result: { oof: "321rab" },
+            output: { type: "text", value: "321rab" },
           },
         ],
       },
@@ -116,20 +247,90 @@ describe("tool calls", () => {
       },
       {
         role: "tool",
-        content: JSON.stringify({ oof: "321rab" }),
+        content: "321rab",
         tool_call_id: "quux",
+      },
+    ])
+  })
+
+  it("should stringify non-text tool outputs", () => {
+    const result = convertToQwenChatMessages([
+      {
+        role: "tool",
+        content: [
+          {
+            type: "tool-result",
+            toolCallId: "quux",
+            toolName: "thwomp",
+            output: { type: "json", value: { url: "https://example.com" } },
+          },
+        ],
+      },
+    ])
+
+    expect(result).toEqual([
+      {
+        role: "tool",
+        tool_call_id: "quux",
+        content: JSON.stringify({ url: "https://example.com" }),
+      },
+    ])
+  })
+
+  it("should use the value of error-text tool outputs", () => {
+    const result = convertToQwenChatMessages([
+      {
+        role: "tool",
+        content: [
+          {
+            type: "tool-result",
+            toolCallId: "quux",
+            toolName: "thwomp",
+            output: { type: "error-text", value: "Something broke" },
+          },
+        ],
+      },
+    ])
+
+    expect(result).toEqual([
+      {
+        role: "tool",
+        tool_call_id: "quux",
+        content: "Something broke",
       },
     ])
   })
 })
 
-describe("provider-specific metadata merging", () => {
-  it("should merge system message metadata", async () => {
+describe("reasoning", () => {
+  it("should skip reasoning parts in assistant messages", () => {
+    const result = convertToQwenChatMessages([
+      {
+        role: "assistant",
+        content: [
+          { type: "reasoning", text: "thinking..." },
+          { type: "text", text: "Answer" },
+        ],
+      },
+    ])
+
+    expect(result).toEqual([
+      {
+        role: "assistant",
+        content: "Answer",
+        tool_calls: undefined,
+      },
+    ])
+  })
+})
+
+describe("provider-specific options merging", () => {
+  it("should merge system message options", () => {
     const result = convertToQwenChatMessages([
       {
         role: "system",
         content: "You are a helpful assistant.",
-        providerMetadata: {
+        providerOptions: {
           qwen: {
             cacheControl: { type: "ephemeral" },
           },
@@ -146,7 +347,7 @@ describe("provider-specific metadata merging", () => {
     ])
   })
 
-  it("should merge user message content metadata", async () => {
+  it("should merge user message content options", () => {
     const result = convertToQwenChatMessages([
       {
         role: "user",
@@ -154,7 +355,7 @@ describe("provider-specific metadata merging", () => {
           {
             type: "text",
             text: "Hello",
-            providerMetadata: {
+            providerOptions: {
               qwen: {
                 cacheControl: { type: "ephemeral" },
               },
@@ -173,11 +374,11 @@ describe("provider-specific metadata merging", () => {
     ])
   })
 
-  it("should prioritize content-level metadata when merging", async () => {
+  it("should prioritize content-level options when merging", () => {
     const result = convertToQwenChatMessages([
       {
         role: "user",
-        providerMetadata: {
+        providerOptions: {
           qwen: {
             messageLevel: true,
           },
@@ -186,7 +387,7 @@ describe("provider-specific metadata merging", () => {
           {
             type: "text",
             text: "Hello",
-            providerMetadata: {
+            providerOptions: {
               qwen: {
                 contentLevel: true,
               },
@@ -205,7 +406,7 @@ describe("provider-specific metadata merging", () => {
     ])
   })
 
-  it("should handle tool calls with metadata", async () => {
+  it("should handle tool calls with options", () => {
     const result = convertToQwenChatMessages([
       {
         role: "assistant",
@@ -214,8 +415,8 @@ describe("provider-specific metadata merging", () => {
             type: "tool-call",
             toolCallId: "call1",
             toolName: "calculator",
-            args: { x: 1, y: 2 },
-            providerMetadata: {
+            input: { x: 1, y: 2 },
+            providerOptions: {
               qwen: {
                 cacheControl: { type: "ephemeral" },
               },
@@ -244,17 +445,17 @@ describe("provider-specific metadata merging", () => {
     ])
   })
 
-  it("should handle image content with metadata", async () => {
+  it("should handle file content with options", () => {
     const imageUrl = new URL("https://example.com/image.jpg")
     const result = convertToQwenChatMessages([
       {
         role: "user",
         content: [
           {
-            type: "image",
-            image: imageUrl,
-            mimeType: "image/jpeg",
-            providerMetadata: {
+            type: "file",
+            data: imageUrl,
+            mediaType: "image/jpeg",
+            providerOptions: {
               qwen: {
                 cacheControl: { type: "ephemeral" },
               },
@@ -278,12 +479,12 @@ describe("provider-specific metadata merging", () => {
     ])
   })
 
-  it("should omit non-qwen metadata", async () => {
+  it("should omit non-qwen options", () => {
     const result = convertToQwenChatMessages([
       {
         role: "system",
         content: "Hello",
-        providerMetadata: {
+        providerOptions: {
           someOtherProvider: {
             shouldBeIgnored: true,
           },
@@ -307,21 +508,21 @@ describe("provider-specific metadata merging", () => {
           {
             type: "text",
             text: "Hello from part 1",
-            providerMetadata: {
+            providerOptions: {
               qwen: { sentiment: "positive" },
               leftoverKey: { foo: "some leftover data" },
             },
           },
           {
-            type: "image",
-            image: new Uint8Array([0, 1, 2, 3]),
-            mimeType: "image/png",
-            providerMetadata: {
+            type: "file",
+            data: new Uint8Array([0, 1, 2, 3]),
+            mediaType: "image/png",
+            providerOptions: {
               qwen: { alt_text: "A sample image" },
             },
           },
         ],
-        providerMetadata: {
+        providerOptions: {
           qwen: { priority: "high" },
         },
       },
@@ -330,7 +531,7 @@ describe("provider-specific metadata merging", () => {
     expect(result).toEqual([
       {
         role: "user",
-        priority: "high", // hoisted from message-level providerMetadata
+        priority: "high", // hoisted from message-level providerOptions
         content: [
           {
             type: "text",
@@ -382,8 +583,8 @@ describe("provider-specific metadata merging", () => {
             type: "tool-call",
             toolCallId: "call1",
             toolName: "searchTool",
-            args: { query: "Weather" },
-            providerMetadata: {
+            input: { query: "Weather" },
+            providerOptions: {
               qwen: { function_call_reason: "user request" },
             },
           },
@@ -392,7 +593,7 @@ describe("provider-specific metadata merging", () => {
             type: "tool-call",
             toolCallId: "call2",
             toolName: "mapsTool",
-            args: { location: "Paris" },
+            input: { location: "Paris" },
           },
         ],
       },
@@ -429,8 +630,8 @@ describe("provider-specific metadata merging", () => {
     const result = convertToQwenChatMessages([
       {
         role: "tool",
-        providerMetadata: {
-          // this just gets omitted as we prioritize content-level metadata
+        providerOptions: {
+          // this just gets omitted as we prioritize content-level options
           qwen: { responseTier: "detailed" },
         },
         content: [
@@ -438,16 +639,16 @@ describe("provider-specific metadata merging", () => {
             type: "tool-result",
             toolCallId: "call123",
             toolName: "calculator",
-            result: { stepOne: "data chunk 1" },
+            output: { type: "text", value: JSON.stringify({ stepOne: "data chunk 1" }) },
           },
           {
             type: "tool-result",
             toolCallId: "call123",
             toolName: "calculator",
-            providerMetadata: {
+            providerOptions: {
               qwen: { partial: true },
             },
-            result: { stepTwo: "data chunk 2" },
+            output: { type: "text", value: JSON.stringify({ stepTwo: "data chunk 2" }) },
           },
         ],
       },
@@ -468,11 +669,11 @@ describe("provider-specific metadata merging", () => {
     ])
   })
 
-  it("should handle multiple content parts with multiple metadata layers", () => {
+  it("should handle multiple content parts with multiple option layers", () => {
     const result = convertToQwenChatMessages([
       {
         role: "user",
-        providerMetadata: {
+        providerOptions: {
           qwen: { messageLevel: "global-metadata" },
           leftoverForMessage: { x: 123 },
         },
@@ -480,16 +681,16 @@ describe("provider-specific metadata merging", () => {
           {
             type: "text",
             text: "Part A",
-            providerMetadata: {
+            providerOptions: {
               qwen: { textPartLevel: "localized" },
               leftoverForText: { info: "text leftover" },
             },
           },
           {
-            type: "image",
-            image: new Uint8Array([9, 8, 7, 6]),
-            mimeType: "image/png",
-            providerMetadata: {
+            type: "file",
+            data: new Uint8Array([9, 8, 7, 6]),
+            mediaType: "image/png",
+            providerOptions: {
               qwen: { imagePartLevel: "image-data" },
             },
           },
@@ -519,11 +720,11 @@ describe("provider-specific metadata merging", () => {
     ])
   })
 
-  it("should handle different tool metadata vs. message-level metadata", () => {
+  it("should handle different tool options vs. message-level options", () => {
     const result = convertToQwenChatMessages([
       {
         role: "assistant",
-        providerMetadata: {
+        providerOptions: {
           qwen: { globalPriority: "high" },
         },
         content: [
@@ -532,8 +733,8 @@ describe("provider-specific metadata merging", () => {
             type: "tool-call",
             toolCallId: "callXYZ",
             toolName: "awesomeTool",
-            args: { param: "someValue" },
-            providerMetadata: {
+            input: { param: "someValue" },
+            providerOptions: {
               qwen: {
                 toolPriority: "critical",
               },
@@ -563,11 +764,11 @@ describe("provider-specific metadata merging", () => {
     ])
   })
 
-  it("should handle metadata collisions and overwrites in tool calls", () => {
+  it("should handle options collisions and overwrites in tool calls", () => {
     const result = convertToQwenChatMessages([
       {
         role: "assistant",
-        providerMetadata: {
+        providerOptions: {
           qwen: {
             cacheControl: { type: "default" },
             sharedKey: "assistantLevel",
@@ -578,8 +779,8 @@ describe("provider-specific metadata merging", () => {
             type: "tool-call",
             toolCallId: "collisionToolCall",
             toolName: "collider",
-            args: { num: 42 },
-            providerMetadata: {
+            input: { num: 42 },
+            providerOptions: {
               qwen: {
                 cacheControl: { type: "ephemeral" }, // overwrites top-level
                 sharedKey: "toolLevel",
@@ -610,5 +811,23 @@ describe("provider-specific metadata merging", () => {
         ],
       },
     ])
+  })
+
+  it("should throw for unsupported assistant content parts", () => {
+    expect(() =>
+      convertToQwenChatMessages([
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "tool-result",
+              toolCallId: "call1",
+              toolName: "calculator",
+              output: { type: "text", value: "1" },
+            },
+          ],
+        },
+      ]),
+    ).toThrowError()
   })
 })

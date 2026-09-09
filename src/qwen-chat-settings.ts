@@ -24,6 +24,13 @@ export type QwenChatModelId
     | "qwen2.5-vl-72b-instruct"
     | "qwen2.5-vl-7b-instruct"
     | "qwen2.5-vl-3b-instruct"
+// New multimodal models
+    | "qwen3-vl-plus"
+    | "qwen3-vl-flash"
+    | "qwen3.8-max"
+    | "qwen3.5-omni-plus"
+    | "qwen3-omni-flash"
+    | "qwen-audio-turbo"
     | (string & {})
 
 export interface QwenChatSettings {
