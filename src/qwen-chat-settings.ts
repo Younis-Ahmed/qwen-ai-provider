@@ -45,4 +45,11 @@ Enable this if the model that you are using does not support streaming.
 Defaults to `false`.
    */
   simulateStreaming?: boolean
+  /**
+Whether the model supports structured outputs via JSON schema.
+When true, the provider sends the full JSON schema in `response_format`
+so the API can enforce it server-side.
+Defaults to `true`.
+   */
+  supportsStructuredOutputs?: boolean
 }

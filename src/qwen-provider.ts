@@ -175,7 +175,10 @@ export function createQwen(
     (registry.chat ?? (
       (modelId: QwenChatModelId, settings2: QwenChatSettings, config: QwenChatConfig) =>
         new QwenChatLanguageModel(modelId, settings2, config)
-    ))(modelId, settings, getCommonModelConfig("chat"))
+    ))(modelId, settings, {
+      ...getCommonModelConfig("chat"),
+      supportsStructuredOutputs: settings.supportsStructuredOutputs ?? true,
+    })
 
   // Create a completion model instance.
   const createCompletionModel = (
