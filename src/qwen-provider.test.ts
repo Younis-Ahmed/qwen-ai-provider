@@ -6,13 +6,11 @@ vi.stubEnv("DASHSCOPE_API_KEY", "test-api-key-123")
 describe("qwenProvider", () => {
   describe("registry", () => {
     const chatFactory = vi.fn()
-    const completionFactory = vi.fn()
     const embeddingFactory = vi.fn()
     const imageFactory = vi.fn()
 
     const provider = createQwen({}, {
       chat: chatFactory as any,
-      completion: completionFactory as any,
       embedding: embeddingFactory as any,
       image: imageFactory as any,
     })
@@ -44,19 +42,6 @@ describe("qwenProvider", () => {
         settings,
         expect.objectContaining({
           provider: "qwen.chat",
-        }),
-      )
-    })
-
-    it("should construct a completion model via completion", () => {
-      const settings = { user: "foo-user" }
-      provider.completion("qwen-turbo", settings)
-
-      expect(completionFactory).toHaveBeenCalledWith(
-        "qwen-turbo",
-        settings,
-        expect.objectContaining({
-          provider: "qwen.completion",
         }),
       )
     })

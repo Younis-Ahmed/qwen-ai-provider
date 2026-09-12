@@ -9,11 +9,6 @@ import type {
 } from "@ai-sdk/provider-utils"
 import type { QwenChatConfig } from "./qwen-chat-language-model"
 import type { QwenChatModelId, QwenChatSettings } from "./qwen-chat-settings"
-import type { QwenCompletionConfig } from "./qwen-completion-language-model"
-import type {
-  QwenCompletionModelId,
-  QwenCompletionSettings,
-} from "./qwen-completion-settings"
 import type { QwenEmbeddingConfig } from "./qwen-embedding-model"
 import type {
   QwenEmbeddingModelId,
@@ -22,7 +17,6 @@ import type {
 import { NoSuchModelError } from "@ai-sdk/provider"
 import { loadApiKey, withoutTrailingSlash } from "@ai-sdk/provider-utils"
 import { QwenChatLanguageModel } from "./qwen-chat-language-model"
-import { QwenCompletionLanguageModel } from "./qwen-completion-language-model"
 import { QwenEmbeddingModel } from "./qwen-embedding-model"
 
 /**
@@ -57,11 +51,6 @@ export interface QwenProvider extends ProviderV2 {
   languageModel: (
     modelId: QwenChatModelId,
     settings?: QwenChatSettings,
-  ) => LanguageModelV2
-
-  completion: (
-    modelId: QwenCompletionModelId,
-    settings?: QwenCompletionSettings,
   ) => LanguageModelV2
 }
 
@@ -112,11 +101,6 @@ export interface QwenModelRegistry {
     modelId: QwenChatModelId,
     settings: QwenChatSettings,
     config: QwenChatConfig,
-  ) => LanguageModelV2
-  completion?: (
-    modelId: QwenCompletionModelId,
-    settings: QwenCompletionSettings,
-    config: QwenCompletionConfig,
   ) => LanguageModelV2
   embedding?: (
     modelId: QwenEmbeddingModelId,
@@ -180,16 +164,6 @@ export function createQwen(
       supportsStructuredOutputs: settings.supportsStructuredOutputs ?? true,
     })
 
-  // Create a completion model instance.
-  const createCompletionModel = (
-    modelId: QwenCompletionModelId,
-    settings: QwenCompletionSettings = {},
-  ) =>
-    (registry.completion ?? (
-      (modelId: QwenCompletionModelId, settings2: QwenCompletionSettings, config: QwenCompletionConfig) =>
-        new QwenCompletionLanguageModel(modelId, settings2, config)
-    ))(modelId, settings, getCommonModelConfig("completion"))
-
   // Create a text embedding model instance.
   const createTextEmbeddingModel = (
     modelId: QwenEmbeddingModelId,
@@ -205,7 +179,6 @@ export function createQwen(
     createChatModel(modelId, settings)
 
   provider.chatModel = createChatModel
-  provider.completion = createCompletionModel
   provider.textEmbeddingModel = createTextEmbeddingModel
   provider.languageModel = createChatModel
   provider.imageModel
