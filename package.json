@@ -46,7 +46,7 @@
     "prettier-check": "prettier --check \"./**/*.ts*\"",
     "clean": "rm -rf dist",
     "prepare": "husky",
-    "ci:release": "pnpm clean && pnpm build && changeset publish",
+    "ci:release": "pnpm clean && pnpm build && npm publish --provenance --access public",
     "ci:version": "changeset version && pnpm install --no-frozen-lockfile"
   },
   "peerDependencies": {
