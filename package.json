@@ -59,7 +59,7 @@
   "devDependencies": {
     "@ai-sdk/test-server": "^1.0.6",
     "@antfu/eslint-config": "^4.1.1",
-    "@changesets/cli": "^2.27.12",
+    "@changesets/cli": "^3.0.3",
     "@commitlint/cli": "^19.7.1",
     "@commitlint/config-conventional": "^19.7.1",
     "@edge-runtime/vm": "^5.0.0",
