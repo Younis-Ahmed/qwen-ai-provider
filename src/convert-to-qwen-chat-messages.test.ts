@@ -8,11 +8,15 @@ describe("user messages", () => {
     const result = convertToQwenChatMessages([
       {
         role: "user",
-        content: [{ type: "text", text: "Hello" }],
+        content: [
+          { type: "text", text: "Hello" },
+        ],
       },
     ])
 
-    expect(result).toEqual([{ role: "user", content: "Hello" }])
+    expect(result).toEqual([
+      { role: "user", content: "Hello" },
+    ])
   })
 
   it("should convert messages with image file parts", () => {
@@ -262,7 +266,10 @@ describe("tool calls", () => {
             type: "tool-result",
             toolCallId: "quux",
             toolName: "thwomp",
-            output: { type: "json", value: { url: "https://example.com" } },
+            output: {
+              type: "json",
+              value: { url: "https://example.com" },
+            },
           },
         ],
       },
@@ -471,7 +478,9 @@ describe("provider-specific options merging", () => {
         content: [
           {
             type: "image_url",
-            image_url: { url: imageUrl.toString() },
+            image_url: {
+              url: imageUrl.toString(),
+            },
             cacheControl: { type: "ephemeral" },
           },
         ],
@@ -639,7 +648,10 @@ describe("provider-specific options merging", () => {
             type: "tool-result",
             toolCallId: "call123",
             toolName: "calculator",
-            output: { type: "text", value: JSON.stringify({ stepOne: "data chunk 1" }) },
+            output: {
+              type: "text",
+              value: JSON.stringify({ stepOne: "data chunk 1" }),
+            },
           },
           {
             type: "tool-result",
@@ -648,7 +660,10 @@ describe("provider-specific options merging", () => {
             providerOptions: {
               qwen: { partial: true },
             },
-            output: { type: "text", value: JSON.stringify({ stepTwo: "data chunk 2" }) },
+            output: {
+              type: "text",
+              value: JSON.stringify({ stepTwo: "data chunk 2" }),
+            },
           },
         ],
       },

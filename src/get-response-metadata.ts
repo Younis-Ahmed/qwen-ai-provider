@@ -23,6 +23,8 @@ export function getResponseMetadata({
     // Map 'model' to 'modelId' for improved clarity; assign if provided.
     modelId: model ?? undefined,
     // If 'created' is provided, convert the Unix timestamp (seconds) to a JavaScript Date object.
-    timestamp: created != null ? new Date(created * 1000) : undefined,
+    timestamp: created != null
+      ? new Date(created * 1000)
+      : undefined,
   }
 }

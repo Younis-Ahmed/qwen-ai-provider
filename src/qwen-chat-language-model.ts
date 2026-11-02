@@ -223,7 +223,10 @@ export class QwenChatLanguageModel implements LanguageModelV2 {
 
     return {
       args: { ...baseArgs, tools, tool_choice },
-      warnings: [...warnings, ...toolWarnings],
+      warnings: [
+        ...warnings,
+        ...toolWarnings,
+      ],
     }
   }
 
@@ -328,7 +331,9 @@ export class QwenChatLanguageModel implements LanguageModelV2 {
       const simulatedStream = this.createSimulatedStream(result)
       return {
         stream: simulatedStream,
-        request: { body: JSON.stringify({ ...options, stream: true }) },
+        request: {
+          body: JSON.stringify({ ...options, stream: true }),
+        },
         response: result.response,
       }
     }
@@ -346,7 +351,7 @@ export class QwenChatLanguageModel implements LanguageModelV2 {
     // Set stream flag to true for the API.
     const body = JSON.stringify(requestBody)
     const metadataExtractor
-        = this.config.metadataExtractor?.createStreamExtractor()
+      = this.config.metadataExtractor?.createStreamExtractor()
 
     const { responseHeaders, value: response } = await this.http.stream({
       modelId: this.modelId,
@@ -382,7 +387,9 @@ export class QwenChatLanguageModel implements LanguageModelV2 {
             onRawChunk: raw => metadataExtractor?.processChunk(raw),
             extractError: (value) => {
               const v = value
-              return "error" in v ? v.error?.message : undefined
+              return "error" in v
+                ? v.error?.message
+                : undefined
             },
             onChunk: (value, controller) => {
               const choice = value.choices[0]
@@ -508,7 +515,7 @@ export class QwenChatLanguageModel implements LanguageModelV2 {
 
                   if (toolCallDelta.function?.arguments != null) {
                     toolCall.function.arguments
-                        += toolCallDelta.function?.arguments ?? ""
+                      += toolCallDelta.function?.arguments ?? ""
                   }
 
                   controller.enqueue({

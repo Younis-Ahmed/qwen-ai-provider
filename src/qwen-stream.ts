@@ -143,7 +143,9 @@ export function createQwenStreamTransformer<
               ? usage.promptTokens + usage.completionTokens
               : undefined,
         },
-        ...(metadata ? { providerMetadata: metadata } : {}),
+        ...(metadata
+          ? { providerMetadata: metadata }
+          : {}),
       })
     },
   }

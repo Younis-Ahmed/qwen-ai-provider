@@ -13,7 +13,12 @@ import { QwenChatLanguageModel } from "./qwen-chat-language-model"
 import { createQwen } from "./qwen-provider"
 
 const TEST_PROMPT: LanguageModelV2Prompt = [
-  { role: "user", content: [{ type: "text", text: "Hello" }] },
+  {
+    role: "user",
+    content: [
+      { type: "text", text: "Hello" },
+    ],
+  },
 ]
 
 vi.stubEnv("DASHSCOPE_API_KEY", "test-api-key-123")
@@ -82,7 +87,9 @@ const metadataExtractor: MetadataExtractor = {
       },
       buildMetadata: () => {
         return processedChunkCount > 0
-          ? { qwen: { processedChunkCount } }
+          ? {
+              qwen: { processedChunkCount },
+            }
           : undefined
       },
     }
@@ -94,7 +101,9 @@ const testTool: LanguageModelV2FunctionTool = {
   name: "test-tool",
   inputSchema: {
     type: "object",
-    properties: { value: { type: "string" } },
+    properties: {
+      value: { type: "string" },
+    },
     required: ["value"],
     additionalProperties: false,
     $schema: "http://json-schema.org/draft-07/schema#",
@@ -219,8 +228,12 @@ describe("doGenerate", () => {
             index: 0,
             message: {
               role: "assistant",
-              ...(content != null ? { content } : {}),
-              ...(reasoning_content !== "" ? { reasoning_content } : {}),
+              ...(content != null
+                ? { content }
+                : {}),
+              ...(reasoning_content !== ""
+                ? { reasoning_content }
+                : {}),
               tool_calls,
             },
             finish_reason,
@@ -248,7 +261,9 @@ describe("doGenerate", () => {
 
     const { content } = await model.doGenerate({ prompt: TEST_PROMPT })
 
-    expect(content).toStrictEqual([{ type: "text", text: "Hello, World!" }])
+    expect(content).toStrictEqual([
+      { type: "text", text: "Hello, World!" },
+    ])
   })
 
   it("should extract reasoning content before text", async () => {
@@ -402,7 +417,9 @@ describe("doGenerate", () => {
 
     expect(await server.calls[0].requestBodyJson).toStrictEqual({
       model: "qwen-chat",
-      messages: [{ role: "user", content: "Hello" }],
+      messages: [
+        { role: "user", content: "Hello" },
+      ],
     })
   })
 
@@ -479,7 +496,9 @@ describe("doGenerate", () => {
 
     expect(await server.calls[0].requestBodyJson).toStrictEqual({
       model: "qwen-chat",
-      messages: [{ role: "user", content: "Hello" }],
+      messages: [
+        { role: "user", content: "Hello" },
+      ],
     })
   })
 
@@ -497,7 +516,9 @@ describe("doGenerate", () => {
 
     expect(await server.calls[0].requestBodyJson).toStrictEqual({
       model: "qwen-chat",
-      messages: [{ role: "user", content: "Hello" }],
+      messages: [
+        { role: "user", content: "Hello" },
+      ],
       tools: [
         {
           type: "function",
@@ -553,7 +574,9 @@ describe("doGenerate", () => {
 
       expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-chat",
-        messages: [{ role: "user", content: "Hello" }],
+        messages: [
+          { role: "user", content: "Hello" },
+        ],
       })
     })
 
@@ -567,7 +590,9 @@ describe("doGenerate", () => {
 
       expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-chat",
-        messages: [{ role: "user", content: "Hello" }],
+        messages: [
+          { role: "user", content: "Hello" },
+        ],
         response_format: { type: "json_object" },
       })
     })
@@ -588,7 +613,9 @@ describe("doGenerate", () => {
           type: "json",
           schema: {
             type: "object",
-            properties: { value: { type: "string" } },
+            properties: {
+              value: { type: "string" },
+            },
             required: ["value"],
             additionalProperties: false,
             $schema: "http://json-schema.org/draft-07/schema#",
@@ -598,7 +625,9 @@ describe("doGenerate", () => {
 
       expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-plus",
-        messages: [{ role: "user", content: "Hello" }],
+        messages: [
+          { role: "user", content: "Hello" },
+        ],
         response_format: { type: "json_object" },
       })
     })
@@ -615,7 +644,9 @@ describe("doGenerate", () => {
 
       const schema: JSONSchema7 = {
         type: "object",
-        properties: { value: { type: "string" } },
+        properties: {
+          value: { type: "string" },
+        },
         required: ["value"],
         additionalProperties: false,
         $schema: "http://json-schema.org/draft-07/schema#",
@@ -631,7 +662,9 @@ describe("doGenerate", () => {
 
       expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-plus",
-        messages: [{ role: "user", content: "Hello" }],
+        messages: [
+          { role: "user", content: "Hello" },
+        ],
         response_format: {
           type: "json_schema",
           json_schema: {
@@ -656,7 +689,9 @@ describe("doGenerate", () => {
 
       const schema: JSONSchema7 = {
         type: "object",
-        properties: { value: { type: "string" } },
+        properties: {
+          value: { type: "string" },
+        },
         required: ["value"],
         additionalProperties: false,
       }
@@ -673,7 +708,9 @@ describe("doGenerate", () => {
 
       expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-plus",
-        messages: [{ role: "user", content: "Hello" }],
+        messages: [
+          { role: "user", content: "Hello" },
+        ],
         response_format: {
           type: "json_schema",
           json_schema: {
@@ -705,7 +742,9 @@ describe("doGenerate", () => {
 
       expect(await server.calls[0].requestBodyJson).toStrictEqual({
         model: "qwen-plus",
-        messages: [{ role: "user", content: "Hello" }],
+        messages: [
+          { role: "user", content: "Hello" },
+        ],
         response_format: {
           type: "json_object",
         },
@@ -1049,7 +1088,9 @@ describe("doStream", () => {
   })
 
   it("should expose the raw response headers", async () => {
-    prepareStreamResponse({ content: ["Hello"] })
+    prepareStreamResponse({
+      content: ["Hello"],
+    })
 
     const { response } = await model.doStream({
       prompt: TEST_PROMPT,
@@ -1059,7 +1100,9 @@ describe("doStream", () => {
   })
 
   it("should pass the messages and the model", async () => {
-    prepareStreamResponse({ content: ["Hello"] })
+    prepareStreamResponse({
+      content: ["Hello"],
+    })
 
     await model.doStream({
       prompt: TEST_PROMPT,
@@ -1067,7 +1110,9 @@ describe("doStream", () => {
 
     expect(await server.calls[0].requestBodyJson).toMatchObject({
       model: "qwen-chat",
-      messages: [{ role: "user", content: "Hello" }],
+      messages: [
+        { role: "user", content: "Hello" },
+      ],
       stream: true,
       stream_options: {
         include_usage: true,
@@ -1076,7 +1121,9 @@ describe("doStream", () => {
   })
 
   it("should warn about unsupported topK setting", async () => {
-    prepareStreamResponse({ content: ["Hello"] })
+    prepareStreamResponse({
+      content: ["Hello"],
+    })
 
     const { stream } = await model.doStream({
       prompt: TEST_PROMPT,
@@ -1087,12 +1134,16 @@ describe("doStream", () => {
 
     expect(parts[0]).toStrictEqual({
       type: "stream-start",
-      warnings: [{ type: "unsupported-setting", setting: "topK" }],
+      warnings: [
+        { type: "unsupported-setting", setting: "topK" },
+      ],
     })
   })
 
   it("should pass headers", async () => {
-    prepareStreamResponse({ content: ["Hello"] })
+    prepareStreamResponse({
+      content: ["Hello"],
+    })
 
     const provider = createQwen({
       baseURL: "https://my.api.com/v1/",
@@ -1120,7 +1171,9 @@ describe("doStream", () => {
   })
 
   it("should include provider-specific options", async () => {
-    prepareStreamResponse({ content: ["Hello"] })
+    prepareStreamResponse({
+      content: ["Hello"],
+    })
 
     await model.doStream({
       prompt: TEST_PROMPT,
@@ -1137,7 +1190,9 @@ describe("doStream", () => {
   })
 
   it("should not include provider-specific options for different provider", async () => {
-    prepareStreamResponse({ content: ["Hello"] })
+    prepareStreamResponse({
+      content: ["Hello"],
+    })
 
     await provider("qwen-chat").doStream({
       prompt: TEST_PROMPT,
@@ -1150,7 +1205,9 @@ describe("doStream", () => {
 
     expect(await server.calls[0].requestBodyJson).toStrictEqual({
       model: "qwen-chat",
-      messages: [{ role: "user", content: "Hello" }],
+      messages: [
+        { role: "user", content: "Hello" },
+      ],
       stream: true,
       stream_options: {
         include_usage: true,
@@ -1159,7 +1216,9 @@ describe("doStream", () => {
   })
 
   it("should send request body", async () => {
-    prepareStreamResponse({ content: ["Hello"] })
+    prepareStreamResponse({
+      content: ["Hello"],
+    })
 
     const { request } = await model.doStream({
       prompt: TEST_PROMPT,
@@ -1182,7 +1241,9 @@ describe("doStream", () => {
       },
     )
 
-    prepareStreamResponse({ content: ["Hello"] })
+    prepareStreamResponse({
+      content: ["Hello"],
+    })
 
     const { stream } = await modelWithMetadata.doStream({
       prompt: TEST_PROMPT,
@@ -1259,8 +1320,12 @@ describe("doStream simulated streaming", () => {
             index: 0,
             message: {
               role: "assistant",
-              ...(content !== "" ? { content } : {}),
-              ...(reasoning_content !== "" ? { reasoning_content } : {}),
+              ...(content !== ""
+                ? { content }
+                : {}),
+              ...(reasoning_content !== ""
+                ? { reasoning_content }
+                : {}),
               tool_calls,
             },
             finish_reason,

@@ -15,7 +15,9 @@ const config = {
 
 const responseSchema = z.object({
   id: z.string(),
-  choices: z.array(z.object({ text: z.string() })),
+  choices: z.array(z.object({
+    text: z.string(),
+  })),
 })
 
 describe("qwenHttpClient", () => {
@@ -26,7 +28,9 @@ describe("qwenHttpClient", () => {
           type: "json-value",
           body: {
             id: "chatcmpl-123",
-            choices: [{ text: "Hello" }],
+            choices: [
+              { text: "Hello" },
+            ],
           },
         },
       },
@@ -44,11 +48,15 @@ describe("qwenHttpClient", () => {
 
       expect(result.value).toStrictEqual({
         id: "chatcmpl-123",
-        choices: [{ text: "Hello" }],
+        choices: [
+          { text: "Hello" },
+        ],
       })
       expect(result.rawValue).toStrictEqual({
         id: "chatcmpl-123",
-        choices: [{ text: "Hello" }],
+        choices: [
+          { text: "Hello" },
+        ],
       })
       expect(result.responseHeaders).toBeDefined()
     })
@@ -93,7 +101,10 @@ describe("qwenHttpClient", () => {
         chunkSchema: z.object({
           id: z.string().nullish(),
           choices: z.array(
-            z.object({ text: z.string(), finish_reason: z.string().nullish() }),
+            z.object({
+              text: z.string(),
+              finish_reason: z.string().nullish(),
+            }),
           ),
         }),
       })
@@ -102,11 +113,15 @@ describe("qwenHttpClient", () => {
       expect(chunks.filter(chunk => chunk.success).map(chunk => chunk.value)).toStrictEqual([
         {
           id: "1",
-          choices: [{ text: "Hello", finish_reason: null }],
+          choices: [
+            { text: "Hello", finish_reason: null },
+          ],
         },
         {
           id: "1",
-          choices: [{ text: "", finish_reason: "stop" }],
+          choices: [
+            { text: "", finish_reason: "stop" },
+          ],
         },
       ])
     })

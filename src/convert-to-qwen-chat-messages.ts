@@ -164,7 +164,9 @@ export function convertToQwenChatMessages(
         messages.push({
           role: "assistant",
           content: text,
-          tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
+          tool_calls: toolCalls.length > 0
+            ? toolCalls
+            : undefined,
           ...providerOptions,
         })
         break
