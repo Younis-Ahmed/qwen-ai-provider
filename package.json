@@ -53,8 +53,8 @@
     "zod": "^3.25.76 || ^4.1.8"
   },
   "dependencies": {
-    "@ai-sdk/provider": "^2.0.3",
-    "@ai-sdk/provider-utils": "^3.0.35"
+    "@ai-sdk/provider": "^2.0.5",
+    "@ai-sdk/provider-utils": "^3.0.43"
   },
   "devDependencies": {
     "@ai-sdk/test-server": "^1.0.6",

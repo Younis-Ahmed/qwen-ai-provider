@@ -29,6 +29,8 @@ export type QwenChatModelId
     | "qwen3-vl-flash"
     | "qwen3.8-max"
     | "qwen3.5-omni-plus"
+    | "qwen3-coder-plus"
+    | "qwen3-coder-flash"
     | "qwen3-omni-flash"
     | "qwen-audio-turbo"
     | (string & {})

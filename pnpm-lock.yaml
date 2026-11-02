@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@ai-sdk/provider':
-        specifier: ^2.0.3
-        version: 2.0.3
+        specifier: ^2.0.5
+        version: 2.0.5
       '@ai-sdk/provider-utils':
-        specifier: ^3.0.35
-        version: 3.0.36(zod@3.25.76)
+        specifier: ^3.0.43
+        version: 3.0.43(zod@3.25.76)
     devDependencies:
       '@ai-sdk/test-server':
         specifier: ^1.0.6
@@ -78,14 +78,14 @@ importers:
 
 packages:
 
-  '@ai-sdk/provider-utils@3.0.36':
-    resolution: {integrity: sha512-2eSw90hn32Je6n2a8Gf4dJ2EoecPJuOCWqwZCw+BkhPq2LOS01HX3s6ljgOm0iIkZiD5aAuMdpOw17rYKQF/Zg==}
+  '@ai-sdk/provider-utils@3.0.43':
+    resolution: {integrity: sha512-aygJpJAk/Utq+aUMs6K6xtKwRd/428h6in2KSbMQ+lDbRKP/3TchOFWPpztTReAuZOQ/c+0iI/WTR259M17ljA==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider@2.0.3':
-    resolution: {integrity: sha512-h88OPkavHTiN9tMn2l5awAznGB0lXzjcLhgR1/rvjB2zlLprsNxbM2tt6OJsHUxduLC3klq0/eqaSf6fX5XVww==}
+  '@ai-sdk/provider@2.0.5':
+    resolution: {integrity: sha512-cmG40u10QFEUrYXWYom6Lo6DLR+pND3wWABTTT9Nf7zg9F7BD46KNj+STekndp9Kg5ZAIPA0WxmTI0IwRvKvvQ==}
     engines: {node: '>=18'}
 
   '@ai-sdk/test-server@1.0.6':
@@ -3067,15 +3067,15 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/provider-utils@3.0.36(zod@3.25.76)':
+  '@ai-sdk/provider-utils@3.0.43(zod@3.25.76)':
     dependencies:
-      '@ai-sdk/provider': 2.0.3
+      '@ai-sdk/provider': 2.0.5
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.1.1
       undici: 5.29.0
       zod: 3.25.76
 
-  '@ai-sdk/provider@2.0.3':
+  '@ai-sdk/provider@2.0.5':
     dependencies:
       json-schema: 0.4.0
 
