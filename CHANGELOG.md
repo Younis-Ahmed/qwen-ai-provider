@@ -1,5 +1,17 @@
 # qwen-ai-provider
 
+## 1.0.0
+
+### Major Changes
+
+- 2c92812: Migrate provider to AI SDK v5 (`@ai-sdk/provider` 2.x): implement `LanguageModelV2`/`EmbeddingModelV2`/`ProviderV2`, remove the legacy completion model (DashScope exposes no `/completions` endpoint), and update request/response mapping for v5 usage and stream parts. Includes reasoning content, multimodal input, tool calling, structured outputs, and embeddings support.
+
+### Patch Changes
+
+- 06feb5c: - Fixed the onFinish hook token usage response
+  - Updated the zod response scheme
+  - Handle unsupported content parts in assistant messages
+
 ## 0.1.1
 
 ### Patch Changes
