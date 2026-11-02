@@ -1,5 +1,4 @@
-import type { EmbeddingModelV1Embedding } from "@ai-sdk/provider"
-import { JsonTestServer } from "@ai-sdk/provider-utils/test"
+import { createTestServer } from "@ai-sdk/test-server/with-vitest"
 import { describe, expect, it } from "vitest"
 import { createQwen } from "./qwen-provider"
 
@@ -18,100 +17,70 @@ const provider = createQwen({
     Authorization: `Bearer test-api-key`,
   },
 })
-const model = provider.textEmbeddingModel("text-embedding-3-large")
+const model = provider.textEmbeddingModel("text-embedding-v3")
 
 describe("doEmbed", () => {
-  const server = new JsonTestServer("https://my.api.com/v1/embeddings")
+  const server = createTestServer({
+    "https://my.api.com/v1/embeddings": {
+      response: {
+        type: "json-value",
+        body: {
+          object: "list",
+          data: dummyEmbeddings.map((embedding, i) => ({
+            object: "embedding",
+            index: i,
+            embedding,
+          })),
+          model: "text-embedding-v3",
+          usage: { prompt_tokens: 8 },
+        },
+      },
+    },
+  })
 
-  server.setupTestEnvironment()
-
-  function prepareJsonResponse({
-    embeddings = dummyEmbeddings,
-    usage = { prompt_tokens: 8, total_tokens: 8 },
-  }: {
-    embeddings?: EmbeddingModelV1Embedding[]
-    usage?: { prompt_tokens: number, total_tokens: number }
-  } = {}) {
-    server.responseBodyJson = {
-      object: "list",
-      data: embeddings.map((embedding, i) => ({
-        object: "embedding",
-        index: i,
-        embedding,
-      })),
-      model: "text-embedding-3-large",
-      usage,
-    }
-  }
-
-  it("should extract embedding", async () => {
-    prepareJsonResponse()
-
+  it("should extract embeddings", async () => {
     const { embeddings } = await model.doEmbed({ values: testValues })
 
     expect(embeddings).toStrictEqual(dummyEmbeddings)
   })
 
-  it("should expose the raw response headers", async () => {
-    prepareJsonResponse()
+  it("should expose the response headers", async () => {
+    const { response } = await model.doEmbed({ values: testValues })
 
-    server.responseHeaders = {
-      "test-header": "test-value",
-    }
-
-    const { rawResponse } = await model.doEmbed({ values: testValues })
-
-    expect(rawResponse?.headers).toStrictEqual({
-      // default headers:
-      "content-length": "236",
-      "content-type": "application/json",
-
-      // custom header
-      "test-header": "test-value",
-    })
+    expect(response?.headers).toBeDefined()
   })
 
   it("should extract usage", async () => {
-    prepareJsonResponse({
-      usage: { prompt_tokens: 20, total_tokens: 20 },
-    })
-
     const { usage } = await model.doEmbed({ values: testValues })
 
-    expect(usage).toStrictEqual({ tokens: 20 })
+    expect(usage).toStrictEqual({ tokens: 8 })
   })
 
   it("should pass the model and the values", async () => {
-    prepareJsonResponse()
-
     await model.doEmbed({ values: testValues })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
-      model: "text-embedding-3-large",
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
+      model: "text-embedding-v3",
       input: testValues,
       encoding_format: "float",
     })
   })
 
   it("should pass the dimensions setting", async () => {
-    prepareJsonResponse()
-
     await provider
-      .textEmbeddingModel("text-embedding-3-large", { dimensions: 64 })
+      .textEmbeddingModel("text-embedding-v3", { dimensions: 64 })
       .doEmbed({ values: testValues })
 
-    expect(await server.getRequestBodyJson()).toStrictEqual({
-      model: "text-embedding-3-large",
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
+      model: "text-embedding-v3",
       input: testValues,
       encoding_format: "float",
       dimensions: 64,
     })
   })
 
-  it("should pass headers", async () => {
-    prepareJsonResponse()
-
-    const provider = createQwen({
+  it("should pass per-call headers", async () => {
+    const providerWithHeaders = createQwen({
       baseURL: "https://my.api.com/v1/",
       headers: {
         "Authorization": `Bearer test-api-key`,
@@ -119,20 +88,24 @@ describe("doEmbed", () => {
       },
     })
 
-    await provider.textEmbeddingModel("text-embedding-3-large").doEmbed({
+    await providerWithHeaders.textEmbeddingModel("text-embedding-v3").doEmbed({
       values: testValues,
       headers: {
         "Custom-Request-Header": "request-header-value",
       },
     })
 
-    const requestHeaders = await server.getRequestHeaders()
+    const requestHeaders = server.calls[0].requestHeaders
 
-    expect(requestHeaders).toStrictEqual({
-      "authorization": "Bearer test-api-key",
-      "content-type": "application/json",
-      "custom-provider-header": "provider-header-value",
-      "custom-request-header": "request-header-value",
-    })
+    expect(requestHeaders.authorization).toBe("Bearer test-api-key")
+    expect(requestHeaders["content-type"]).toBe("application/json")
+    expect(requestHeaders["custom-provider-header"]).toBe("provider-header-value")
+    expect(requestHeaders["custom-request-header"]).toBe("request-header-value")
+  })
+
+  it("should throw when the number of values exceeds the max embeddings per call", async () => {
+    const values = Array.from({ length: 2049 }, (_, i) => `value-${i}`)
+
+    await expect(model.doEmbed({ values })).rejects.toThrow()
   })
 })

@@ -43,6 +43,17 @@ export interface QwenUserMessage
 export type QwenContentPart
   = | QwenContentPartText
     | QwenContentPartImage
+    | QwenContentPartVideo
+    | QwenContentPartAudio
+    | QwenContentPartFile
+
+/**
+ * Message part that contains text.
+ */
+export interface QwenContentPartText extends JsonRecord {
+  type: "text"
+  text: string
+}
 
 /**
  * Message part that contains an image URL.
@@ -53,11 +64,27 @@ export interface QwenContentPartImage extends JsonRecord {
 }
 
 /**
- * Message part that contains text.
+ * Message part that contains a video URL.
  */
-export interface QwenContentPartText extends JsonRecord {
-  type: "text"
-  text: string
+export interface QwenContentPartVideo extends JsonRecord {
+  type: "video_url"
+  video_url: { url: string }
+}
+
+/**
+ * Message part that contains an audio input.
+ */
+export interface QwenContentPartAudio extends JsonRecord {
+  type: "input_audio"
+  input_audio: { data: string, format: string }
+}
+
+/**
+ * Message part that contains a file URL.
+ */
+export interface QwenContentPartFile extends JsonRecord {
+  type: "file"
+  file: { file_url: string }
 }
 
 /**

@@ -24,6 +24,15 @@ export type QwenChatModelId
     | "qwen2.5-vl-72b-instruct"
     | "qwen2.5-vl-7b-instruct"
     | "qwen2.5-vl-3b-instruct"
+// New multimodal models
+    | "qwen3-vl-plus"
+    | "qwen3-vl-flash"
+    | "qwen3.8-max"
+    | "qwen3.5-omni-plus"
+    | "qwen3-coder-plus"
+    | "qwen3-coder-flash"
+    | "qwen3-omni-flash"
+    | "qwen-audio-turbo"
     | (string & {})
 
 export interface QwenChatSettings {
@@ -38,4 +47,11 @@ Enable this if the model that you are using does not support streaming.
 Defaults to `false`.
    */
   simulateStreaming?: boolean
+  /**
+Whether the model supports structured outputs via JSON schema.
+When true, the provider sends the full JSON schema in `response_format`
+so the API can enforce it server-side.
+Defaults to `true`.
+   */
+  supportsStructuredOutputs?: boolean
 }

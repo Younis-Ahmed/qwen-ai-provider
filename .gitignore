@@ -23,4 +23,8 @@ yarn-error.log*
 skills-lock.json
 AGENTS.md
 PLAN-per-major-migration.md
+FIX-STRUCTURED-OUTPUT.md
 docs/
+MULTIMODAL-INTEGRATION-PLAN.md
+V5-MIGRATION-CHUNKS.md
+v6-migration-strategy.md
